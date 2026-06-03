@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <title>共通テスト採点システム - きょうてくん</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>きょうてくん</h1>
+            </div>
+            <ul class="nav-menu">
+                <li class="active" onclick="switchTab('tab-grading')">採点</li>
+                <li onclick="switchTab('tab-results')">成績確認</li>
+                <li onclick="switchTab('tab-ranking')">全国ランキング</li>
+                <li onclick="switchTab('tab-profile')">プロフィール</li>
+                <li onclick="switchTab('tab-friends')">フレンド</li>
+                <li onclick="switchTab('tab-settings')">設定</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+
+            <section id="tab-grading" class="tab-section active">
+                <h2>マークシート入力</h2>
+                <div>
+                    科目:
+                    <select id="subject" onchange="updateSheet()">
+                        <option value="japanese">国語</option>
+                        <option value="englishR">英語R（リーディング）</option>
+                        <option value="englishL">英語L（リスニング）</option>
+                        <option value="math1A">数学ⅠA</option>
+                        <option value="math2BC">数学ⅡBC</option>
+                    </select>
+
+                    年度:
+                    <select id="year" onchange="updateSheet()"></select>
+                </div>
+                <br>
+                <div id="sheet-container" class="sheet-container"></div>
+                <br>
+                <button onclick="gradeTest()">採点して成績を確認</button>
+                <button onclick="resetAll()">全リセット</button>
+            </section>
+
+            <section id="tab-results" class="tab-section">
+                <h2>成績表・志望校判定</h2>
+                <div>
+                    志望校:
+                    <select id="university" onchange="updateJudge()">
+                        <option value="nagoya">名古屋大学</option>
+                        <option value="nagoyaTech">名古屋工業大学</option>
+                        <option value="nanzan">南山大学</option>
+                    </select>
+                </div>
+                <hr>
+                <div class="scoreContainer">
+                    <div class="topArea">
+                        <div class="judgeBox">
+                            <h3>志望校判定</h3>
+                            <div id="judgeLetter">-</div>
+                            <div id="judgeUniversity"></div>
+                        </div>
+                        <div class="chartBox">
+                            <canvas id="radarChart"></canvas>
+                        </div>
+                    </div>
+                    <div class="bottomArea">
+                        <table class="scoreTable">
+                            <thead>
+                                <tr>
+                                    <th>科目</th>
+                                    <th>得点</th>
+                                    <th>平均</th>
+                                    <th>標準偏差</th>
+                                    <th>偏差値</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportBody"></tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>合計</td>
+                                    <td id="totalScore"></td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                    <td>-</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+
+                <hr>
+                <div class="cloud-save-area"
+                    style="text-align: center; margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                    <h3>全国ランキングに参加する</h3>
+                    <input type="text" id="nickname" placeholder="ニックネームを入力" style="padding: 8px; font-size: 16px;"
+                        readonly>
+                    <button onclick="saveScoreToCloud()"
+                        style="padding: 8px 16px; font-size: 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">成績をクラウドに保存</button>
+                </div>
+                <br>
+                <button onclick="generateDemoResult()">発表用デモ成績</button>
+            </section>
+
+            <section id="tab-ranking" class="tab-section">
+                <h2>全国ランキング</h2>
+
+                <div
+                    style="margin-bottom: 20px; background: var(--surface); padding: 15px; border-radius: 8px; box-shadow: var(--shadow);">
+                    <div
+                        style="display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                        範囲:
+                        <select id="ranking-scope">
+                            <option value="national">全国</option>
+                            <option value="prefecture">県内</option>
+                            <option value="school">校内</option>
+                        </select>
+
+                        科目:
+                        <select id="ranking-subject">
+                            <option value="japanese">国語</option>
+                            <option value="englishR">英語R</option>
+                            <option value="englishL">英語L</option>
+                            <option value="math1A">数学ⅠA</option>
+                            <option value="math2BC">数学ⅡBC</option>
+                        </select>
+
+                        <button onclick="loadRanking()">ランキングを更新</button>
+                    </div>
+                </div>
+
+                <table class="scoreTable">
+                    <thead>
+                        <tr>
+                            <th>順位</th>
+                            <th>ニックネーム</th>
+                            <th>得点</th>
+                            <th>偏差値</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rankingBody">
+                        <tr>
+                            <td colspan="4">「ランキングを更新」ボタンを押してください</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </section>
+
+            <section id="tab-profile" class="tab-section">
+                <h2>マイプロフィール</h2>
+                <div class="game-profile-container">
+
+                    <div class="profile-header">
+                        <div class="avatar-box">
+                            <img id="display-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=guest"
+                                alt="アバター">
+                        </div>
+                        <div class="user-info">
+                            <h3 id="display-nickname">ゲストプレイヤー</h3>
+                            <p class="user-id">ID: <span id="display-userid">未設定</span></p>
+
+                            <div class="level-container">
+                                <span class="level-text">Lv. <span id="display-level">1</span></span>
+                                <div class="progress-bar-bg">
+                                    <div class="progress-bar-fill" style="width: 15%;"></div>
+                                </div>
+                                <span class="exp-text">EXP: 15 / 100</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-stats">
+                        <div class="stat-box">
+                            <h4>フレンド</h4>
+                            <p id="display-friend-count">0 人</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>所属グループ</h4>
+                            <p>-</p>
+                        </div>
+                        <div class="stat-box">
+                            <h4>最高偏差値</h4>
+                            <p id="display-top-hensachi">--</p>
+                        </div>
+                    </div>
+
+                    <div class="achievements">
+                        <h3>実績バッジ</h3>
+                        <div class="badges-grid">
+                            <div class="badge gold">👑 全国1位達成</div>
+                            <div class="badge silver">💯 数学100点</div>
+                            <div class="badge bronze">🔥 10年分完走</div>
+                            <div class="badge locked">🔒 物理満点</div>
+                            <div class="badge locked">🔒 連続ログイン30日</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-settings" class="tab-section">
+                <h2>設定</h2>
+                <div
+                    style="text-align: left; max-width: 400px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; border: 2px solid var(--primary);">
+                    <p style="font-size: 14px; color: var(--text-muted); margin-top: 0;">設定した情報は、成績保存やランキングに自動で使われます。
+                    </p>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">ユーザーID (半角英数字のみ)</label>
+                        <input type="text" id="profile-userid" placeholder="例: yamada2024"
+                            style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">ニックネーム</label>
+                        <input type="text" id="profile-nickname" placeholder="ランキングに表示される名前"
+                            style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">都道府県</label>
+                        <select id="profile-prefecture" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                            <option value="">選択してください</option>
+                            <option value="aichi">愛知県</option>
+                            <option value="tokyo">東京都</option>
+                            <option value="osaka">大阪府</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">高校名</label>
+                        <input type="text" id="profile-school" placeholder="例：〇〇高校"
+                            style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">学年</label>
+                        <select id="profile-grade" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                            <option value="3">高校3年生</option>
+                            <option value="2">高校2年生</option>
+                            <option value="1">高校1年生</option>
+                            <option value="0">既卒・その他</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">第一志望校</label>
+                        <select id="profile-university" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                            <option value="nagoya">名古屋大学</option>
+                            <option value="nagoyaTech">名古屋工業大学</option>
+                            <option value="nanzan">南山大学</option>
+                        </select>
+                    </div>
+
+                    <button onclick="saveProfile()" style="width: 100%; font-size: 16px;">設定を保存する</button>
+                </div>
+            </section>
+            <section id="tab-friends" class="tab-section">
+                <h2>フレンド</h2>
+
+                <div class="friend-search-box">
+                    <h3>IDからフレンドを追加</h3>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="text" id="friend-id-input" placeholder="フレンドのユーザーIDを入力"
+                            style="flex-grow: 1; padding: 10px; font-size: 16px;">
+                        <button onclick="addFriend()">検索して追加</button>
+                    </div>
+                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">
+                        ※成績を一度でもクラウドに保存したことがあるユーザーのみ検索できます。
+                    </p>
+                </div>
+
+                <hr style="margin: 30px 0; border: none; border-top: 1px dashed var(--border);">
+
+                <h3>フレンド一覧</h3>
+                <div id="friend-list-container" class="friend-list-grid">
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDY9KeJQillEX0_nwtlgQMsupa-n_zsodY",
+            authDomain: "kyoute-kun.firebaseapp.com",
+            projectId: "kyoute-kun",
+            storageBucket: "kyoute-kun.firebasestorage.app",
+            messagingSenderId: "322348681555",
+            appId: "1:322348681555:web:7ae403b297b64844f8f9a6"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.query = query;
+        window.where = where;
+        window.updateDoc = updateDoc;
+        window.doc = doc;
+
+        console.log("Firebase Database is ready!");
+    </script>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
