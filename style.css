@@ -932,10 +932,10 @@ tfoot {
     }
 }
 
-/* --- 成績タブ（成績・グラフ・詳細レポート）のスマホ最適化 --- */
+/* --- 成績タブ（成績・グラフ・詳細レポート）のスマホ最適化（強力版） --- */
 @media (max-width: 768px) {
 
-    /* 1. 年度・志望校の選択プルダウンを縦並びにしてタップしやすくする */
+    /* 年度・志望校の選択プルダウンを縦並びに */
     #tab-results>div:first-of-type {
         flex-direction: column !important;
         align-items: stretch !important;
@@ -945,34 +945,39 @@ tfoot {
     #result-year,
     #university {
         width: 100% !important;
-        box-sizing: border-box;
+        box-sizing: border-box !important;
     }
 
-    /* 2. 志望校判定（左）とレーダーチャート（右）を縦並び（上下）に切り替える */
+    /* ★ ここが修正の要：判定とグラフを強制的に縦並び（上下）にする */
     .topArea {
+        display: flex !important;
         flex-direction: column !important;
+        /* 横並びを解除して縦にする魔法 */
+        align-items: center !important;
+        width: 100% !important;
         gap: 20px !important;
     }
 
+    /* 判定ボックスとグラフボックスの幅を画面いっぱいに広げる */
     .judgeBox,
     .chartBox {
         width: 100% !important;
-        box-sizing: border-box;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
     }
 
+    /* グラフが潰れないように、スマホでも高さをしっかり確保する */
     .chartBox {
-        min-height: 250px;
-        /* グラフが潰れないように高さを確保 */
+        min-height: 320px !important;
     }
 
-    /* 3. 詳細レポートエリアもはみ出さずに横スクロールできるようにする */
+    /* 詳細レポートの横スクロール対応 */
     #detailed-results-area>div {
         overflow-x: auto !important;
         padding-bottom: 15px !important;
-        /* スクロールバーが被らないように */
     }
 
-    /* 詳細レポート内の表の最低横幅（潰れ防止） */
     #detailed-results-area .scoreTable {
         min-width: 450px !important;
     }
