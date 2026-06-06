@@ -931,3 +931,49 @@ tfoot {
         display: grid !important;
     }
 }
+
+/* --- 成績タブ（成績・グラフ・詳細レポート）のスマホ最適化 --- */
+@media (max-width: 768px) {
+
+    /* 1. 年度・志望校の選択プルダウンを縦並びにしてタップしやすくする */
+    #tab-results>div:first-of-type {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 10px !important;
+    }
+
+    #result-year,
+    #university {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    /* 2. 志望校判定（左）とレーダーチャート（右）を縦並び（上下）に切り替える */
+    .topArea {
+        flex-direction: column !important;
+        gap: 20px !important;
+    }
+
+    .judgeBox,
+    .chartBox {
+        width: 100% !important;
+        box-sizing: border-box;
+    }
+
+    .chartBox {
+        min-height: 250px;
+        /* グラフが潰れないように高さを確保 */
+    }
+
+    /* 3. 詳細レポートエリアもはみ出さずに横スクロールできるようにする */
+    #detailed-results-area>div {
+        overflow-x: auto !important;
+        padding-bottom: 15px !important;
+        /* スクロールバーが被らないように */
+    }
+
+    /* 詳細レポート内の表の最低横幅（潰れ防止） */
+    #detailed-results-area .scoreTable {
+        min-width: 450px !important;
+    }
+}
