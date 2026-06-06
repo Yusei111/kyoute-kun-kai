@@ -666,3 +666,198 @@ tfoot {
     transform: none;
     box-shadow: none;
 }
+
+/* --- 実績通知＆ポップアップ用アニメーション --- */
+@keyframes slideInRight {
+    0% {
+        transform: translateX(120%);
+        opacity: 0;
+    }
+
+    10% {
+        transform: translateX(-10px);
+        opacity: 1;
+    }
+
+    20% {
+        transform: translateX(0);
+    }
+
+    100% {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOutUp {
+    from {
+        transform: translateY(0);
+        opacity: 1;
+    }
+
+    to {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+}
+
+@keyframes popIn {
+    0% {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.achievement-toast {
+    background: linear-gradient(135deg, #1e293b, #0f172a);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 10px;
+    border-left: 6px solid #fcd34d;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    animation: slideInRight 5s ease-in-out forwards;
+    min-width: 260px;
+    pointer-events: auto;
+}
+
+.achievement-icon {
+    font-size: 32px;
+    filter: drop-shadow(0 0 8px rgba(252, 211, 77, 0.6));
+}
+
+.achievement-content h4 {
+    margin: 0 0 5px 0;
+    color: #fcd34d;
+    font-size: 16px;
+    letter-spacing: 1px;
+}
+
+.achievement-content p {
+    margin: 0;
+    font-size: 13px;
+    color: #cbd5e1;
+}
+
+/* --- スマホ最適化：ボトムナビゲーション --- */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    justify-content: space-around;
+    padding: 5px 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    /* スマホ画面下の余白対応 */
+}
+
+.bottom-nav .nav-item {
+    text-align: center;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 1;
+    padding: 8px 0;
+    transition: 0.2s;
+}
+
+.bottom-nav .nav-item.active {
+    color: var(--primary);
+}
+
+.bottom-nav .nav-icon {
+    font-size: 22px;
+    margin-bottom: 3px;
+}
+
+/* --- スマホ最適化：ボトムナビゲーション --- */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    justify-content: space-around;
+    padding: 5px 0;
+    padding-bottom: env(safe-area-inset-bottom);
+    /* スマホ画面下の余白対応 */
+}
+
+.bottom-nav .nav-item {
+    text-align: center;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    flex: 1;
+    padding: 8px 0;
+    transition: 0.2s;
+}
+
+.bottom-nav .nav-item.active {
+    color: var(--primary);
+}
+
+.bottom-nav .nav-icon {
+    font-size: 22px;
+    margin-bottom: 3px;
+}
+
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+        /* スマホでは左側のメニューを隠す */
+    }
+
+    .bottom-nav {
+        display: flex;
+        /* スマホでは下メニューを表示 */
+    }
+
+    .app-container {
+        margin-bottom: 70px;
+        /* メニューに隠れないように余白を作る */
+    }
+}
+
+/* --- カウントダウン表示のレスポンシブ対応 --- */
+.countdown-mobile {
+    display: none !important;
+    /* PCではスマホ用を隠す */
+}
+
+@media (max-width: 768px) {
+    .countdown-mobile {
+        display: flex !important;
+        /* スマホではスマホ用を出す */
+    }
+
+    .countdown-pc {
+        display: none !important;
+        /* スマホでは左下のPC用を隠す */
+    }
+}
+
+/* --- 一番下までスクロールできるように余白を追加 --- */
+.main-content {
+    padding-bottom: 100px;
+}
+
+.tab-section {
+    padding-bottom: 40px;
+}
