@@ -864,17 +864,23 @@ tfoot {
 
 /* --- スマホ表示のさらなる最適化（レイアウト崩れ防止） --- */
 @media (max-width: 768px) {
+
     /* 成績表などが画面からはみ出さないように、横にスクロールさせる */
     .scoreContainer {
         overflow-x: auto;
-        padding-bottom: 15px; /* スクロールバーが被らないように余白 */
+        padding-bottom: 15px;
+        /* スクロールバーが被らないように余白 */
     }
+
     .scoreTable {
-        min-width: 500px; /* 表が潰れないように最低限の横幅を確保 */
+        min-width: 500px;
+        /* 表が潰れないように最低限の横幅を確保 */
     }
-    
+
     /* 入力欄（プルダウンなど）の文字サイズを16px以上にしてiOSのズームを防ぐ */
-    input, select, button {
+    input,
+    select,
+    button {
         font-size: 16px !important;
     }
 
@@ -882,10 +888,48 @@ tfoot {
     .mark-row {
         gap: 5px;
     }
+
     .choice {
         width: 28px !important;
         height: 28px !important;
         font-size: 13px !important;
         margin: 1px;
+    }
+
+    /* 1. プロフィール上部（アバターとユーザー情報）を縦並びにして中央揃え */
+    .profile-header {
+        flex-direction: column !important;
+        align-items: center;
+        text-align: center;
+        gap: 15px;
+    }
+
+    /* 2. 統計ブロック（フレンド数や最高偏差値）を縦に並べる */
+    .profile-stats {
+        flex-direction: column !important;
+        gap: 10px;
+    }
+
+    /* 3. フレンド検索の入力欄とボタンを縦に並べる */
+    .friend-search-box>div {
+        flex-direction: column;
+    }
+
+    .friend-search-box button {
+        width: 100%;
+    }
+
+    /* 4. ランキングの絞り込み（範囲・科目）を押しやすく広げる */
+    #tab-ranking select,
+    #tab-ranking button {
+        width: 100%;
+        margin-top: 5px;
+        margin-bottom: 5px;
+    }
+
+    /* 5. バッジやフレンド一覧のグリッドを1列（縦並び）にする */
+    .badges-grid,
+    .friend-list-grid {
+        grid-template-columns: 1fr !important;
     }
 }
