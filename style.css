@@ -862,74 +862,72 @@ tfoot {
     padding-bottom: 40px;
 }
 
-/* --- スマホ表示のさらなる最適化（レイアウト崩れ防止） --- */
+/* --- スマホ表示のさらなる最適化（レイアウト崩れ防止・強力版） --- */
 @media (max-width: 768px) {
 
-    /* 成績表などが画面からはみ出さないように、横にスクロールさせる */
+    /* 表の横スクロール対応 */
     .scoreContainer {
-        overflow-x: auto;
-        padding-bottom: 15px;
-        /* スクロールバーが被らないように余白 */
+        overflow-x: auto !important;
+        padding-bottom: 15px !important;
     }
 
     .scoreTable {
-        min-width: 500px;
-        /* 表が潰れないように最低限の横幅を確保 */
+        min-width: 500px !important;
     }
 
-    /* 入力欄（プルダウンなど）の文字サイズを16px以上にしてiOSのズームを防ぐ */
+    /* ズーム防止とマークシート調整 */
     input,
     select,
     button {
         font-size: 16px !important;
     }
 
-    /* マークシートの丸をスマホでタップしやすいサイズに調整 */
     .mark-row {
-        gap: 5px;
+        gap: 5px !important;
     }
 
     .choice {
         width: 28px !important;
         height: 28px !important;
         font-size: 13px !important;
-        margin: 1px;
+        margin: 1px !important;
     }
 
-    /* 1. プロフィール上部（アバターとユーザー情報）を縦並びにして中央揃え */
+    /* ★プロフィール＆ランキングの縦並び化 */
     .profile-header {
         flex-direction: column !important;
-        align-items: center;
-        text-align: center;
-        gap: 15px;
+        align-items: center !important;
+        text-align: center !important;
+        gap: 15px !important;
     }
 
-    /* 2. 統計ブロック（フレンド数や最高偏差値）を縦に並べる */
     .profile-stats {
         flex-direction: column !important;
-        gap: 10px;
+        gap: 10px !important;
     }
 
-    /* 3. フレンド検索の入力欄とボタンを縦に並べる */
+    /* フレンド＆ランキングの検索枠 */
     .friend-search-box>div {
-        flex-direction: column;
+        flex-direction: column !important;
     }
 
     .friend-search-box button {
-        width: 100%;
+        width: 100% !important;
+        margin-top: 5px !important;
     }
 
-    /* 4. ランキングの絞り込み（範囲・科目）を押しやすく広げる */
     #tab-ranking select,
     #tab-ranking button {
-        width: 100%;
-        margin-top: 5px;
-        margin-bottom: 5px;
+        width: 100% !important;
+        margin-top: 5px !important;
+        margin-bottom: 5px !important;
+        display: block !important;
     }
 
-    /* 5. バッジやフレンド一覧のグリッドを1列（縦並び）にする */
+    /* グリッド（バッジ・フレンド一覧）を1列にする */
     .badges-grid,
     .friend-list-grid {
         grid-template-columns: 1fr !important;
+        display: grid !important;
     }
 }
