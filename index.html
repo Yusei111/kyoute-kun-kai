@@ -22,42 +22,160 @@
                 <li onclick="switchTab('tab-profile')">プロフィール</li>
                 <li onclick="switchTab('tab-friends')">フレンド</li>
                 <li onclick="switchTab('tab-settings')">設定</li>
+                <li onclick="switchTab('tab-help')"
+                    style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">❓ ヘルプ</li>
             </ul>
+            <div class="countdown-pc"
+                style="margin-top: auto; padding: 15px; background: rgba(0,0,0,0.2); margin: 15px; border-radius: 8px; text-align: center;">
+                <p style="margin: 0; font-size: 11px; color: #cbd5e1;">共通テスト本番まで</p>
+                <div style="font-size: 16px; font-weight: bold; color: #fcd34d; margin-top: 5px;">
+                    あと <span class="days-to-test" style="font-size: 24px;">--</span> 日
+                </div>
+            </div>
         </aside>
 
         <main class="main-content">
 
             <section id="tab-grading" class="tab-section active">
                 <h2>マークシート入力</h2>
-                <div>
-                    科目:
-                    <select id="subject" onchange="updateSheet()">
-                        <option value="japanese">国語</option>
-                        <option value="englishR">英語R（リーディング）</option>
-                        <option value="englishL">英語L（リスニング）</option>
-                        <option value="math1A">数学ⅠA</option>
-                        <option value="math2BC">数学ⅡBC</option>
-                    </select>
-
-                    年度:
-                    <select id="year" onchange="updateSheet()"></select>
+                <div class="countdown-mobile"
+                    style="margin: 0 auto 20px; max-width: 500px; background: linear-gradient(135deg, #1e293b, #0f172a); border-left: 5px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; color: white; display: flex; justify-content: center; align-items: center; gap: 15px;">
+                    <span style="font-size: 14px; color: #cbd5e1;">共通テスト本番まで</span>
+                    <span style="font-size: 18px; font-weight: bold; color: #fcd34d;">あと <span class="days-to-test"
+                            style="font-size: 28px;">--</span> 日</span>
                 </div>
-                <br>
-                <div id="sheet-container" class="sheet-container"></div>
-                <br>
-                <button onclick="gradeTest()">採点して成績を確認</button>
-                <button onclick="resetAll()">全リセット</button>
+                <div id="exam-setup-section"
+                    style="max-width: 500px; margin: 0 auto; background: var(--surface); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 2px solid var(--primary);">
+                    <h3 style="text-align: center; margin-top: 0; color: var(--text-main);">演習の設定</h3>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
+                        <select id="subject" onchange="loadYears()" style="width: 100%;">
+                            <option value="japanese">国語</option>
+                            <option value="englishR">英語R（リーディング）</option>
+                            <option value="englishL">英語L（リスニング）</option>
+                            <option value="math1A">数学ⅠA</option>
+                            <option value="math2BC">数学ⅡBC</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">年度</label>
+                        <select id="year" style="width: 100%;"></select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">目標得点 (点)</label>
+                        <input type="number" id="target-score" placeholder="例: 80"
+                            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+                    </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">制限時間 (分)</label>
+                        <input type="number" id="time-limit" placeholder="例: 80"
+                            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+                    </div>
+
+                    <button onclick="startExam()" style="width: 100%; font-size: 18px; padding: 12px;">演習スタート！</button>
+                </div>
+
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="javascript:void(0)"
+                        onclick="document.getElementById('direct-input-section').style.display='block'; loadDirectYears();"
+                        style="color: var(--primary); text-decoration: underline; font-size: 14px; font-weight: bold;">過去の点数を直接入力する</a>
+                </div>
+
+                <div id="direct-input-section"
+                    style="display: none; max-width: 500px; margin: 20px auto 0; background: var(--surface); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 2px dashed var(--primary);">
+                    <h3 style="text-align: center; margin-top: 0; color: var(--primary-dark);">手動で点数を入力</h3>
+                    <p style="font-size: 12px; color: #ef4444; margin-bottom: 15px;">※直接入力した成績は全国ランキングに送信できません。</p>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
+                        <select id="direct-subject" onchange="loadDirectYears()" style="width: 100%;">
+                            <option value="japanese">国語</option>
+                            <option value="englishR">英語R（リーディング）</option>
+                            <option value="englishL">英語L（リスニング）</option>
+                            <option value="math1A">数学ⅠA</option>
+                            <option value="math2BC">数学ⅡBC</option>
+                        </select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">年度</label>
+                        <select id="direct-year" style="width: 100%;"></select>
+                    </div>
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">得点</label>
+                        <input type="number" id="direct-score" placeholder="例: 85"
+                            style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="document.getElementById('direct-input-section').style.display='none'"
+                            style="background: #94a3b8; flex: 1; padding: 12px; font-weight: bold; border: none; border-radius: 4px; color: white;">キャンセル</button>
+                        <button onclick="saveDirectScore()"
+                            style="flex: 1; padding: 12px; font-weight: bold; background: var(--primary); color: white; border: none; border-radius: 4px;">成績を登録</button>
+                    </div>
+                </div>
+
+                <div id="exam-sheet-section" style="display: none;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <span id="display-exam-subject" style="font-weight: bold; font-size: 18px;">科目名</span>
+                            <span id="display-exam-year" style="margin-left: 10px; color: #cbd5e1;">年度</span>
+                        </div>
+                        <div style="display: flex; gap: 20px; align-items: center;">
+                            <div style="font-size: 14px;">目標: <strong id="display-target-score"
+                                    style="color: #fcd34d; font-size: 18px;">--</strong> 点</div>
+                            <div style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 6px;">残り時間:
+                                <strong id="display-timer"
+                                    style="color: #ef4444; font-size: 20px; letter-spacing: 1px;">--:--</strong>
+                            </div>
+                        </div>
+                    </div>
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                    </div>
+
+                    <div
+                        style="margin-bottom: 20px; background: white; padding: 15px; border-radius: 8px; border: 2px solid #cbd5e1;">
+                        <label
+                            style="display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--primary-dark);">📱
+                            キーボード・テンキーで連続入力</label>
+                        <p style="font-size: 11px; color: var(--text-muted); margin-top: 0; margin-bottom: 8px;">
+                            枠をタップすると数字キーボードが開きます。（予測変換・全角オフ）</p>
+                        <input type="text" id="fast-answer-input" inputmode="numeric" pattern="[0-9\s]*"
+                            autocomplete="off" spellcheck="false" placeholder="ここをタップして解答を連続入力"
+                            style="width: 100%; padding: 12px; font-size: 24px; letter-spacing: 8px; font-family: monospace; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; background: #f8fafc;">
+                    </div>
+
+                    <div id="sheet-container" class="sheet-container"></div>
+                    <br>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button onclick="gradeTest()" style="padding: 12px 30px; font-size: 16px;">採点して成績を確認</button>
+                        <button onclick="backToSetup()" style="background: #64748b; padding: 12px 20px;">設定に戻る</button>
+                    </div>
+                </div>
             </section>
 
             <section id="tab-results" class="tab-section">
                 <h2>成績表・志望校判定</h2>
-                <div>
-                    志望校:
-                    <select id="university" onchange="updateJudge()">
-                        <option value="nagoya">名古屋大学</option>
-                        <option value="nagoyaTech">名古屋工業大学</option>
-                        <option value="nanzan">南山大学</option>
-                    </select>
+                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                    <div>
+                        年度:
+                        <select id="result-year" onchange="updateReport(); updateChart(); updateJudge();"
+                            style="padding: 5px; border-radius: 4px; font-size: 16px;">
+                        </select>
+                    </div>
+                    <div>
+                        志望校:
+                        <select id="university" onchange="updateJudge(); updateChart();"
+                            style="padding: 5px; border-radius: 4px; font-size: 16px;">
+                            <option value="nagoya">名古屋大学</option>
+                            <option value="nagoyaTech">名古屋工業大学</option>
+                            <option value="nanzan">南山大学</option>
+                        </select>
+                    </div>
                 </div>
                 <hr>
                 <div class="scoreContainer">
@@ -66,6 +184,15 @@
                             <h3>志望校判定</h3>
                             <div id="judgeLetter">-</div>
                             <div id="judgeUniversity"></div>
+                            <div
+                                style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #fda4af; text-align: left; font-size: 15px; color: #881337; line-height: 1.6;">
+                                <div>
+                                    <strong>次の判定まで:</strong> <span id="judgeNextPoints">--</span>
+                                </div>
+                                <div>
+                                    <strong>志望校内順位:</strong> <span id="judgeUniRank">--</span>
+                                </div>
+                            </div>
                         </div>
                         <div class="chartBox">
                             <canvas id="radarChart"></canvas>
@@ -95,6 +222,8 @@
                         </table>
                     </div>
                 </div>
+                <div id="overall-feedback-area" style="margin-top: 30px;"></div>
+                <div id="detailed-results-area" style="margin-top: 30px;"></div>
 
                 <hr>
                 <div class="cloud-save-area"
@@ -169,9 +298,9 @@
                             <div class="level-container">
                                 <span class="level-text">Lv. <span id="display-level">1</span></span>
                                 <div class="progress-bar-bg">
-                                    <div class="progress-bar-fill" style="width: 15%;"></div>
+                                    <div class="progress-bar-fill" id="display-exp-bar" style="width: 0%;"></div>
                                 </div>
-                                <span class="exp-text">EXP: 15 / 100</span>
+                                <span class="exp-text" id="display-exp-text">EXP: 0 / 100</span>
                             </div>
                         </div>
                     </div>
@@ -277,7 +406,84 @@
                 <div id="friend-list-container" class="friend-list-grid">
                 </div>
             </section>
+            <section id="tab-help" class="tab-section">
+                <h2>使い方ガイド</h2>
+
+                <div
+                    style="text-align: left; max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; gap: 15px;">
+
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid var(--primary);">
+                        <h3 style="margin-top: 0; color: var(--primary-dark);">📝 1. 過去問を採点しよう</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 0;">
+                            「採点」タブから科目・年度・目標点数などを設定してスタートします。<br>
+                            <strong>💡 超便利！連続入力機能：</strong><br>
+                            マークシートの上の枠をタップすると、スマホのテンキーから「1234...」と数字を連続で打ち込むだけで、一瞬でマークが塗りつぶされます！
+                        </p>
+                    </div>
+
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid #10b981;">
+                        <h3 style="margin-top: 0; color: #047857;">📊 2. AI弱点分析と志望校判定</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 0;">
+                            採点すると、自動で「偏差値」と「志望校のA〜E判定」が算出されます。<br>
+                            一番下には <strong>AIによる弱点分析アドバイス</strong> が表示されるので、次回の復習に役立てましょう！
+                        </p>
+                    </div>
+
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid #f59e0b;">
+                        <h3 style="margin-top: 0; color: #b45309;">☁️ 3. 成績をクラウドに保存</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 0;">
+                            成績タブの下にある「成績をクラウドに保存」を押すと、自分の点数が全国に共有されます。<br>
+                            ※事前に「設定」タブから、<strong>ユーザーID</strong>と<strong>ニックネーム</strong>を登録しておいてください。
+                        </p>
+                    </div>
+
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid #8b5cf6;">
+                        <h3 style="margin-top: 0; color: #5b21b6;">👑 4. ランキングとフレンド機能</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 0;">
+                            「全国ランキング」では、志望校内での自分の立ち位置や、全国のライバルと順位を競えます。<br>
+                            また、「フレンド」タブで友達のIDを検索して追加すれば、お互いのモチベーションアップに！
+                        </p>
+                    </div>
+
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid #ec4899;">
+                        <h3 style="margin-top: 0; color: #be185d;">🎮 5. 勉強してレベルアップ！</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6; margin-bottom: 0;">
+                            初めての過去問を解いて採点するたびに、<strong>経験値（EXP）を100獲得</strong>します。<br>
+                            勉強すればするほどRPGゲームのようにレベルが上がっていくので、最高レベルを目指して演習を頑張りましょう！
+                        </p>
+                    </div>
+
+                </div>
+            </section>
         </main>
+        <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('tab-grading'); updateBottomNav(this)">
+                <div class="nav-icon">✏️</div><span>採点</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-results'); updateBottomNav(this)">
+                <div class="nav-icon">📊</div><span>成績</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-ranking'); updateBottomNav(this)">
+                <div class="nav-icon">👑</div><span>順位</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-profile'); updateBottomNav(this)">
+                <div class="nav-icon">👤</div><span>プロフ</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-friends'); updateBottomNav(this)">
+                <div class="nav-icon">🤝</div><span>友だち</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-settings'); updateBottomNav(this)">
+                <div class="nav-icon">⚙️</div><span>設定</span>
+            </div>
+            <div class="nav-item" onclick="switchTab('tab-help'); updateBottomNav(this)">
+                <div class="nav-icon">❓</div><span>ヘルプ</span>
+            </div>
+        </nav>
     </div>
 
     <script type="module">
@@ -308,6 +514,26 @@
         console.log("Firebase Database is ready!");
     </script>
 
+    <div id="toast-container"
+        style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
+    </div>
+
+    <div id="custom-modal-overlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div
+            style="background: white; padding: 25px 30px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; border: 3px solid var(--primary); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+            <h3 id="custom-modal-title" style="margin-top: 0; color: var(--primary-dark); font-size: 20px;">確認</h3>
+            <p id="custom-modal-message"
+                style="margin-bottom: 25px; color: var(--text-main); line-height: 1.6; font-size: 15px; white-space: pre-wrap; text-align: left;">
+            </p>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="custom-modal-cancel"
+                    style="background: #94a3b8; padding: 12px 20px; flex: 1; font-weight: bold; font-size: 15px;">キャンセル</button>
+                <button id="custom-modal-ok"
+                    style="background: var(--primary); padding: 12px 20px; flex: 1; font-weight: bold; font-size: 15px;">OK</button>
+            </div>
+        </div>
+    </div>
     <script src="script.js"></script>
 </body>
 
