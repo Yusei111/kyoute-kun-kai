@@ -861,3 +861,31 @@ tfoot {
 .tab-section {
     padding-bottom: 40px;
 }
+
+/* --- スマホ表示のさらなる最適化（レイアウト崩れ防止） --- */
+@media (max-width: 768px) {
+    /* 成績表などが画面からはみ出さないように、横にスクロールさせる */
+    .scoreContainer {
+        overflow-x: auto;
+        padding-bottom: 15px; /* スクロールバーが被らないように余白 */
+    }
+    .scoreTable {
+        min-width: 500px; /* 表が潰れないように最低限の横幅を確保 */
+    }
+    
+    /* 入力欄（プルダウンなど）の文字サイズを16px以上にしてiOSのズームを防ぐ */
+    input, select, button {
+        font-size: 16px !important;
+    }
+
+    /* マークシートの丸をスマホでタップしやすいサイズに調整 */
+    .mark-row {
+        gap: 5px;
+    }
+    .choice {
+        width: 28px !important;
+        height: 28px !important;
+        font-size: 13px !important;
+        margin: 1px;
+    }
+}
