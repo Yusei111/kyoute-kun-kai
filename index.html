@@ -343,10 +343,16 @@
                     <p style="font-size: 14px; color: var(--text-muted); margin-top: 0;">設定した情報は、成績保存やランキングに自動で使われます。
                     </p>
 
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">ユーザーID (半角英数字のみ)</label>
-                        <input type="text" id="profile-userid" placeholder="例: yamada2024"
-                            style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    <div
+                        style="margin-bottom: 15px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid var(--border);">
+                        <label style="display: block; font-weight: bold; margin-bottom: 10px;">アカウント認証</label>
+                        <div id="auth-status-area">
+                            <p style="font-size: 13px; color: #ef4444; margin-top: 0;">
+                                未ログインです。<br>ランキング参加やクラウド保存にはログインが必要です。</p>
+                            <button onclick="document.getElementById('auth-modal').style.display='flex'"
+                                style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; width: 100%;">ログイン
+                                / 新規登録</button>
+                        </div>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">ニックネーム</label>
@@ -384,7 +390,19 @@
                             <option value="nanzan">南山大学</option>
                         </select>
                     </div>
-
+                    <div
+                        style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center;">
+                        <label
+                            style="font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                            <input type="checkbox" id="agree-terms" style="transform: scale(1.5);">
+                            <span>
+                                <a href="terms.html" target="_blank"
+                                    style="color: var(--primary); text-decoration: underline;">利用規約</a> と
+                                <a href="privacy.html" target="_blank"
+                                    style="color: var(--primary); text-decoration: underline;">プライバシーポリシー</a> に同意する
+                            </span>
+                        </label>
+                    </div>
                     <button onclick="saveProfile()" style="width: 100%; font-size: 16px;">設定を保存する</button>
                 </div>
             </section>
@@ -492,7 +510,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, collection, addDoc, getDocs, query, where, updateDoc, doc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
-
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-auth.js";
         const firebaseConfig = {
             apiKey: "AIzaSyDY9KeJQillEX0_nwtlgQMsupa-n_zsodY",
             authDomain: "kyoute-kun.firebaseapp.com",
@@ -504,7 +522,12 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
+        const auth = getAuth(app);
+        window.auth = auth;
+        window.createUserWithEmailAndPassword = createUserWithEmailAndPassword;
+        window.signInWithEmailAndPassword = signInWithEmailAndPassword;
+        window.onAuthStateChanged = onAuthStateChanged;
+        window.signOut = signOut;
         window.db = db;
         window.collection = collection;
         window.addDoc = addDoc;
@@ -518,11 +541,11 @@
     </script>
 
     <div id="toast-container"
-        style="position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
+        style="position: fixed; top: 20px; right: 20px; z-index: 10005; display: flex; flex-direction: column; gap: 10px; pointer-events: none;">
     </div>
 
     <div id="custom-modal-overlay"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10006; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
         <div
             style="background: white; padding: 25px 30px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; border: 3px solid var(--primary); animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
             <h3 id="custom-modal-title" style="margin-top: 0; color: var(--primary-dark); font-size: 20px;">確認</h3>
@@ -535,6 +558,37 @@
                 <button id="custom-modal-ok"
                     style="background: var(--primary); padding: 12px 20px; flex: 1; font-weight: bold; font-size: 15px;">OK</button>
             </div>
+        </div>
+    </div>
+    <!-- ★ ログイン・新規登録モーダル -->
+    <div id="auth-modal"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 10001; justify-content: center; align-items: center; backdrop-filter: blur(5px);">
+        <div
+            style="background: white; padding: 30px; border-radius: 12px; max-width: 400px; width: 90%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); position: relative;">
+            <button onclick="document.getElementById('auth-modal').style.display='none'"
+                style="position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">✖</button>
+            <h3 style="margin-top: 0; color: var(--primary-dark); text-align: center;">ログイン / 新規登録</h3>
+
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px;">メールアドレス</label>
+                <input type="email" id="auth-email" placeholder="example@email.com"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); box-sizing: border-box;">
+            </div>
+            <div style="margin-bottom: 25px;">
+                <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 5px;">パスワード
+                    (6文字以上)</label>
+                <input type="password" id="auth-password" placeholder="••••••••"
+                    style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid var(--border); box-sizing: border-box;">
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button onclick="handleAuth(false)"
+                    style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-weight: bold;">ログイン</button>
+                <button onclick="handleAuth(true)"
+                    style="flex: 1; padding: 12px; background: #10b981; color: white; border: none; border-radius: 4px; font-weight: bold;">新規登録</button>
+            </div>
+            <p style="font-size: 11px; color: #64748b; text-align: center; margin-top: 15px;">
+                ※初めての方はメールアドレスとパスワードを入力して「新規登録」を押してください。</p>
         </div>
     </div>
     <script src="script.js"></script>
