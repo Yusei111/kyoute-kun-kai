@@ -911,7 +911,7 @@ async function loadRanking() {
 }
 // --- プロフィール機能 ---
 function saveProfile() {
-    let userid = document.getElementById("profile-userid").value;
+    // ユーザーIDはFirebaseで自動管理されるため、画面からの取得は不要
     let nickname = document.getElementById("profile-nickname").value;
     let university = document.getElementById("profile-university").value;
     let prefecture = document.getElementById("profile-prefecture").value;
@@ -921,16 +921,6 @@ function saveProfile() {
     let isAgreed = document.getElementById("agree-terms").checked;
     if (!isAgreed) {
         showCustomConfirm("確認", "サービスを利用するには、利用規約とプライバシーポリシーへの同意（チェック）が必要です。", "OK", "", true);
-        return; // チェックされていなければここで保存をストップ
-    }
-
-    // ★ユーザーIDのチェック（空欄防止と、半角英数字のみかどうかの判定）
-    if (userid.trim() === "") {
-        alert("ユーザーIDを入力してください。");
-        return;
-    }
-    if (!/^[a-zA-Z0-9]+$/.test(userid)) {
-        alert("ユーザーIDは半角のローマ字と数字のみで入力してください。\n（記号やスペース、日本語は使えません）");
         return;
     }
 
@@ -939,14 +929,15 @@ function saveProfile() {
         return;
     }
 
-    let profile = {
-        userid: userid, // IDを保存データに追加
-        nickname: nickname,
-        university: university,
-        prefecture: prefecture,
-        school: school,
-        grade: grade
-    };
+    // すでに保存されているプロフィール（FirebaseのIDなど）を呼び出す
+    let profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+
+    // 入力された情報だけを上書き更新する
+    profile.nickname = nickname;
+    profile.university = university;
+    profile.prefecture = prefecture;
+    profile.school = school;
+    profile.grade = grade;
 
     localStorage.setItem("userProfile", JSON.stringify(profile));
     alert("プロフィールを保存しました！");
@@ -959,8 +950,7 @@ function applyProfile() {
     if (savedProfile) {
         let profile = JSON.parse(savedProfile);
 
-        // 1. 設定画面の入力を復元
-        document.getElementById("profile-userid").value = profile.userid || "";
+        // 1. 設定画面の入力を復元（消えたuserid入力欄の処理を削除しました）
         document.getElementById("profile-nickname").value = profile.nickname || "";
         document.getElementById("profile-university").value = profile.university || "nagoya";
         document.getElementById("profile-prefecture").value = profile.prefecture || "";
@@ -977,13 +967,17 @@ function applyProfile() {
             if (Object.keys(subjectResults).length > 0) updateJudge();
         }
 
-        // 3. ★ 新しいゲーム風プロフィール画面への反映 ★
+        // 3. ゲーム風プロフィール画面への反映
         let displayNickname = document.getElementById("display-nickname");
         let displayUserid = document.getElementById("display-userid");
         let displayAvatar = document.getElementById("display-avatar");
 
         if (displayNickname) displayNickname.textContent = profile.nickname;
-        if (displayUserid) displayUserid.textContent = profile.userid;
+
+        // ログインしていない場合は未設定にする
+        if (displayUserid) {
+            displayUserid.textContent = profile.userid ? profile.userid : "未設定";
+        }
 
         // ユーザーIDを元に、DiceBear APIで固有のアバター画像を生成する
         if (displayAvatar && profile.userid) {
