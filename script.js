@@ -918,6 +918,12 @@ function saveProfile() {
     let school = document.getElementById("profile-school").value;
     let grade = document.getElementById("profile-grade").value;
 
+    let isAgreed = document.getElementById("agree-terms").checked;
+    if (!isAgreed) {
+        showCustomConfirm("確認", "サービスを利用するには、利用規約とプライバシーポリシーへの同意（チェック）が必要です。", "OK", "", true);
+        return; // チェックされていなければここで保存をストップ
+    }
+
     // ★ユーザーIDのチェック（空欄防止と、半角英数字のみかどうかの判定）
     if (userid.trim() === "") {
         alert("ユーザーIDを入力してください。");
@@ -1633,3 +1639,104 @@ function updateOverallFeedback() {
         </div>
     `;
 }
+
+// --- Firebase 認証機能 (メールアドレスログイン) ---
+
+// 1. ログイン状態を常に監視する機能
+function initAuthListener() {
+    if (!window.auth) return;
+
+    window.onAuthStateChanged(window.auth, (user) => {
+        let statusArea = document.getElementById("auth-status-area");
+        let profileIdDisplay = document.getElementById("display-userid");
+
+        if (user) {
+            // ▼ ログイン中の場合
+            if (statusArea) {
+                statusArea.innerHTML = `
+                    <p style="font-size: 14px; color: #16a34a; font-weight: bold; margin-top: 0; margin-bottom: 10px;">✓ ログイン中</p>
+                    <p style="font-size: 13px; color: var(--text-main); margin-top: 0; word-break: break-all;">${user.email}</p>
+                    <button onclick="logout()" style="padding: 8px 16px; background: #64748b; color: white; border: none; border-radius: 4px; width: 100%;">ログアウト</button>
+                `;
+            }
+            if (profileIdDisplay) profileIdDisplay.textContent = user.email; // プロフィール画面にメアドを表示
+
+            // Firebaseが発行した「絶対に被らない固有ID（uid）」を自分のIDとして保存する
+            let profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+            profile.userid = user.uid;
+            localStorage.setItem("userProfile", JSON.stringify(profile));
+
+        } else {
+            // ▼ 未ログインの場合
+            if (statusArea) {
+                statusArea.innerHTML = `
+                    <p style="font-size: 13px; color: #ef4444; margin-top: 0;">未ログインです。<br>ランキング参加やクラウド保存にはログインが必要です。</p>
+                    <button onclick="document.getElementById('auth-modal').style.display='flex'" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; width: 100%;">ログイン / 新規登録</button>
+                `;
+            }
+            if (profileIdDisplay) profileIdDisplay.textContent = "未ログイン";
+        }
+    });
+}
+
+// 2. ログイン / 新規登録ボタンが押された時の処理
+async function handleAuth(isSignUp) {
+    let email = document.getElementById("auth-email").value;
+    let password = document.getElementById("auth-password").value;
+
+    // 未入力チェック（強制的に手前に出るalertに変更）
+    if (!email || !password) {
+        alert("エラー：メールアドレスとパスワードを入力してください。");
+        return;
+    }
+
+    try {
+        if (isSignUp) {
+            // 新規登録
+            await window.createUserWithEmailAndPassword(window.auth, email, password);
+            alert("登録完了！アカウントの作成が完了しました。");
+        } else {
+            // ログイン
+            await window.signInWithEmailAndPassword(window.auth, email, password);
+            showAchievementToast("ログイン成功", "アカウントにログインしました", "🔑");
+        }
+
+        // 成功したらモーダルを閉じて入力欄を空にする
+        document.getElementById("auth-modal").style.display = "none";
+        document.getElementById("auth-password").value = "";
+
+    } catch (error) {
+        console.error("Auth Error:", error);
+        let errorMsg = "エラーが発生しました。\n\n";
+
+        // 原因を特定して日本語でわかりやすく表示する
+        if (error.code === 'auth/email-already-in-use') {
+            errorMsg = "このメールアドレスは既に登録されています。\n「ログイン」ボタンを押してください。";
+        } else if (error.code === 'auth/invalid-credential') {
+            errorMsg = "メールアドレスかパスワードが間違っています。";
+        } else if (error.code === 'auth/weak-password') {
+            errorMsg = "パスワードは6文字以上で設定してください。";
+        } else if (error.code === 'auth/operation-not-allowed') {
+            errorMsg = "【設定エラー】\nFirebaseの管理画面で「メール/パスワード」の認証機能が「有効(オン)」になっていません！\nFirebaseコンソールを確認してください。";
+        } else {
+            // その他の謎のエラーも英語でそのまま表示する
+            errorMsg += "エラーコード: " + error.code + "\n" + error.message;
+        }
+
+        // ブラウザ標準のポップアップ（絶対に裏に隠れない）でエラーを強制表示
+        alert(errorMsg);
+    }
+}
+
+// 3. ログアウト処理
+function logout() {
+    window.signOut(window.auth).then(() => {
+        showAchievementToast("ログアウト", "ログアウトしました", "👋");
+    });
+}
+
+// アプリ起動時にログイン監視をスタートするよう追加
+document.addEventListener("DOMContentLoaded", () => {
+    // Firebaseの読み込みが終わるのを少し待ってから実行
+    setTimeout(initAuthListener, 500);
+});
