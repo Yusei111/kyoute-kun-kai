@@ -1678,7 +1678,6 @@ async function handleAuth(isSignUp) {
     let email = document.getElementById("auth-email").value;
     let password = document.getElementById("auth-password").value;
 
-    // 未入力チェック（強制的に手前に出るalertに変更）
     if (!email || !password) {
         alert("エラー：メールアドレスとパスワードを入力してください。");
         return;
@@ -1686,12 +1685,27 @@ async function handleAuth(isSignUp) {
 
     try {
         if (isSignUp) {
-            // 新規登録
-            await window.createUserWithEmailAndPassword(window.auth, email, password);
-            alert("登録完了！アカウントの作成が完了しました。");
+            // ▼ 新規登録（仮登録）の処理
+            let userCredential = await window.createUserWithEmailAndPassword(window.auth, email, password);
+
+            // Firebaseから本人確認メールを送信！
+            await window.sendEmailVerification(userCredential.user);
+            alert("【仮登録が完了しました！】\n\n入力されたメールアドレスに「本人確認メール」を送信しました。メール内のリンクをクリックして本登録を完了させてください。\n（※まだログインはできません）");
+
+            // まだ未認証なので、自動的にログアウト状態にしておく
+            await window.signOut(window.auth);
+
         } else {
-            // ログイン
-            await window.signInWithEmailAndPassword(window.auth, email, password);
+            // ▼ ログインの処理
+            let userCredential = await window.signInWithEmailAndPassword(window.auth, email, password);
+
+            // ★ メール認証が終わっているか（本登録済みか）チェック！
+            if (!userCredential.user.emailVerified) {
+                alert("エラー：メールアドレスの認証がまだ完了していません！\n受信した確認メールの中にあるリンクをクリックしてから、再度ログインしてください。");
+                await window.signOut(window.auth); // 未認証なら弾く
+                return;
+            }
+
             showAchievementToast("ログイン成功", "アカウントにログインしました", "🔑");
         }
 
@@ -1703,22 +1717,38 @@ async function handleAuth(isSignUp) {
         console.error("Auth Error:", error);
         let errorMsg = "エラーが発生しました。\n\n";
 
-        // 原因を特定して日本語でわかりやすく表示する
-        if (error.code === 'auth/email-already-in-use') {
-            errorMsg = "このメールアドレスは既に登録されています。\n「ログイン」ボタンを押してください。";
-        } else if (error.code === 'auth/invalid-credential') {
-            errorMsg = "メールアドレスかパスワードが間違っています。";
-        } else if (error.code === 'auth/weak-password') {
-            errorMsg = "パスワードは6文字以上で設定してください。";
-        } else if (error.code === 'auth/operation-not-allowed') {
-            errorMsg = "【設定エラー】\nFirebaseの管理画面で「メール/パスワード」の認証機能が「有効(オン)」になっていません！\nFirebaseコンソールを確認してください。";
-        } else {
-            // その他の謎のエラーも英語でそのまま表示する
-            errorMsg += "エラーコード: " + error.code + "\n" + error.message;
-        }
+        if (error.code === 'auth/email-already-in-use') errorMsg = "このメールアドレスは既に登録されています。\n「ログイン」ボタンを押してください。";
+        else if (error.code === 'auth/invalid-credential') errorMsg = "メールアドレスかパスワードが間違っています。";
+        else if (error.code === 'auth/weak-password') errorMsg = "パスワードは6文字以上で設定してください。";
+        else if (error.code === 'auth/operation-not-allowed') errorMsg = "【設定エラー】Firebaseの管理画面で「メール/パスワード」の認証機能がオンになっていません。";
+        else errorMsg += "エラーコード: " + error.code + "\n" + error.message;
 
-        // ブラウザ標準のポップアップ（絶対に裏に隠れない）でエラーを強制表示
         alert(errorMsg);
+    }
+}
+
+// 3. パスワードを忘れたときの処理
+async function resetPassword() {
+    let email = document.getElementById("auth-email").value;
+
+    // アドレス欄が空のまま押されたら警告
+    if (!email) {
+        alert("パスワードを再設定したいメールアドレスを入力してから、「パスワードを忘れた方はこちら」を押してください。");
+        return;
+    }
+
+    try {
+        await window.sendPasswordResetEmail(window.auth, email);
+        alert("パスワード再設定メールを送信しました！\nメールの案内に従って新しいパスワードを設定してください。");
+        document.getElementById("auth-modal").style.display = "none";
+    } catch (error) {
+        console.error("Reset Password Error:", error);
+        if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-email') {
+            // セキュリティ上、存在しないメアドを入れてもわざと「間違っています」と濁すのが一般的です
+            alert("エラー：入力されたメールアドレスは登録されていないか、間違っています。");
+        } else {
+            alert("エラーが発生しました。\n" + error.message);
+        }
     }
 }
 
