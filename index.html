@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="style.css?v=4">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1505774252903709"
-     crossorigin="anonymous"></script>
+        crossorigin="anonymous"></script>
 </head>
 
 <body>
@@ -19,12 +19,15 @@
                 <h1>きょうてくん</h1>
             </div>
             <ul class="nav-menu">
-                <li class="active" onclick="switchTab('tab-grading')">採点</li>
+                <li onclick="switchTab('tab-grading')">採点</li>
                 <li onclick="switchTab('tab-results')">成績確認</li>
                 <li onclick="switchTab('tab-ranking')">全国ランキング</li>
                 <li onclick="switchTab('tab-profile')">プロフィール</li>
                 <li onclick="switchTab('tab-friends')">フレンド</li>
                 <li onclick="switchTab('tab-settings')">設定</li>
+                <nav class="sidebar-nav">
+                    <button onclick="switchTab('home')" id="btn-home" class="nav-btn active">🏠 ホーム</button>
+                </nav>
                 <li onclick="switchTab('tab-help')"
                     style="margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.2); padding-top: 15px;">❓ ヘルプ</li>
             </ul>
@@ -38,8 +41,58 @@
         </aside>
 
         <main class="main-content">
+            <section id="tab-home" class="tab-section active">
+                <h2>ホーム</h2>
 
-            <section id="tab-grading" class="tab-section active">
+                <div class="info-card" style="margin-top: 20px;">
+                    <div class="info-header">
+                        <h2>📣 きょうてくんへようこそ！</h2>
+                        <span class="badge">Guide</span>
+                    </div>
+                    <div class="info-body">
+                        <p>「きょうてくん」は、大学入学共通テストの自己採点から成績分析、全国ランキングまでを完全にサポートする受験生のためのWebアプリです。</p>
+                        <div class="step-list">
+                            <div class="step-item">
+                                <span class="step-num">1</span>
+                                <p><strong>自己採点:</strong> 各科目の点数や解答を入力して「採点」を押そう！</p>
+                            </div>
+                            <div class="step-item">
+                                <span class="step-num">2</span>
+                                <p><strong>成績分析:</strong> レーダーチャートやグラフで自分の弱点を一目で把握！</p>
+                            </div>
+                            <div class="step-item">
+                                <span class="step-num">3</span>
+                                <p><strong>全国ランキング:</strong> クラウドに保存して、全国のライバルと成績を競い合おう！</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="news-card" style="margin-top: 25px;">
+                    <div class="info-header">
+                        <h2>📝 最新のお知らせ</h2>
+                    </div>
+                    <div class="news-list">
+                        <div class="news-item">
+                            <span class="news-date">2026/06/09</span>
+                            <span class="news-tag update">アップデート</span>
+                            <p class="news-title">Firebaseログイン機能＆独自ドメインに対応しました！</p>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-date">2026/06/05</span>
+                            <span class="news-tag info">重要</span>
+                            <p class="news-title">メールが届かない場合は、迷惑メールフォルダをご確認ください。</p>
+                        </div>
+                        <div class="news-item">
+                            <span class="news-date">2026/05/20</span>
+                            <span class="news-tag data">データ</span>
+                            <p class="news-title">共通テストの過去問データを順次追加中です。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-grading" class="tab-section">
                 <h2>マークシート入力</h2>
                 <div class="countdown-mobile"
                     style="margin: 0 auto 20px; max-width: 500px; background: linear-gradient(135deg, #1e293b, #0f172a); border-left: 5px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; color: white; display: flex; justify-content: center; align-items: center; gap: 15px;">
@@ -485,6 +538,9 @@
             </section>
         </main>
         <nav class="bottom-nav">
+            <div class="nav-item active" onclick="switchTab('tab-home'); updateBottomNav(this)">
+                <div class="nav-icon">🏠</div><span>ホーム</span>
+            </div>
             <div class="nav-item active" onclick="switchTab('tab-grading'); updateBottomNav(this)">
                 <div class="nav-icon">✏️</div><span>採点</span>
             </div>
