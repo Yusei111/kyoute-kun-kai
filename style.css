@@ -54,7 +54,7 @@ body {
 
 .sidebar-header h1 {
     margin: 0;
-    font-size: 22px;
+    font-size: 27px;
     letter-spacing: 2px;
 }
 
@@ -980,5 +980,188 @@ tfoot {
 
     #detailed-results-area .scoreTable {
         min-width: 450px !important;
+    }
+}
+
+/* -----------------------------------
+   使い方＆お知らせカードのUIデザイン
+----------------------------------- */
+.info-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+    /* 柔らかい影で浮かせる */
+    border-left: 6px solid var(--primary);
+    /* 左側にアクセントカラーの線 */
+}
+
+.info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-bottom: 2px dashed #e2e8f0;
+    padding-bottom: 12px;
+}
+
+.info-header h2 {
+    font-size: 20px;
+    color: #1e293b;
+    margin: 0;
+}
+
+.badge {
+    background-color: #ef4444;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    padding: 4px 8px;
+    border-radius: 20px;
+}
+
+.info-body p {
+    color: #475569;
+    line-height: 1.6;
+    margin-bottom: 20px;
+}
+
+/* ステップ手順のスタイリング */
+.step-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    background: #f8fafc;
+    padding: 12px;
+    border-radius: 8px;
+    transition: transform 0.2s;
+    /* ホバー時のアニメーション準備 */
+}
+
+/* マウスを乗せたら少し浮き上がるギミック */
+.step-item:hover {
+    transform: translateX(5px);
+    background: #f1f5f9;
+}
+
+.step-num {
+    background: var(--primary);
+    color: white;
+    font-weight: bold;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    flex-shrink: 0;
+}
+
+.step-item p {
+    margin: 0;
+    font-size: 14px;
+    color: #334155;
+}
+
+/* -----------------------------------
+   フワッと浮かび上がるアニメーション
+----------------------------------- */
+.fade-in-up {
+    opacity: 0;
+    animation: fadeInUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeInUp {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* -----------------------------------
+   お知らせエリアのUIデザイン
+----------------------------------- */
+.news-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.05);
+}
+
+.news-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.news-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.news-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.news-date {
+    font-size: 13px;
+    color: #94a3b8;
+    font-family: monospace;
+    flex-shrink: 0;
+}
+
+/* お知らせタグのスタイリング */
+.news-tag {
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+}
+
+.news-tag.update {
+    background: #e0f2fe;
+    color: #0369a1;
+}
+
+.news-tag.info {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.news-tag.data {
+    background: #f0fdf4;
+    color: #15803d;
+}
+
+.news-title {
+    margin: 0;
+    font-size: 14px;
+    color: #334155;
+    font-weight: 500;
+}
+
+/* スマホ用の縦並び調整 */
+@media (max-width: 600px) {
+    .news-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
     }
 }
