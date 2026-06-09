@@ -43,6 +43,12 @@
         <main class="main-content">
             <section id="tab-home" class="tab-section active">
                 <h2>ホーム</h2>
+                <div
+                    style="margin: 0 auto 20px; max-width: 500px; background: linear-gradient(135deg, #1e293b, #0f172a); border-left: 5px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; color: white; display: flex; justify-content: center; align-items: center; gap: 15px;">
+                    <span style="font-size: 14px; color: #cbd5e1;">共通テスト本番まで</span>
+                    <span style="font-size: 18px; font-weight: bold; color: #fcd34d;">あと <span class="days-to-test"
+                            style="font-size: 28px;">--</span> 日</span>
+                </div>
 
                 <div class="info-card" style="margin-top: 20px;">
                     <div class="info-header">
@@ -94,12 +100,6 @@
 
             <section id="tab-grading" class="tab-section">
                 <h2>マークシート入力</h2>
-                <div class="countdown-mobile"
-                    style="margin: 0 auto 20px; max-width: 500px; background: linear-gradient(135deg, #1e293b, #0f172a); border-left: 5px solid #fcd34d; padding: 15px; border-radius: 8px; text-align: center; color: white; display: flex; justify-content: center; align-items: center; gap: 15px;">
-                    <span style="font-size: 14px; color: #cbd5e1;">共通テスト本番まで</span>
-                    <span style="font-size: 18px; font-weight: bold; color: #fcd34d;">あと <span class="days-to-test"
-                            style="font-size: 28px;">--</span> 日</span>
-                </div>
                 <div id="exam-setup-section"
                     style="max-width: 500px; margin: 0 auto; background: var(--surface); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 2px solid var(--primary);">
                     <h3 style="text-align: center; margin-top: 0; color: var(--text-main);">演習の設定</h3>
@@ -369,8 +369,8 @@
                             <p id="display-friend-count">0 人</p>
                         </div>
                         <div class="stat-box">
-                            <h4>所属グループ</h4>
-                            <p>-</p>
+                            <h4>高校名</h4>
+                            <p id="display-profile-school">未設定</p>
                         </div>
                         <div class="stat-box">
                             <h4>最高偏差値</h4>
@@ -533,15 +533,23 @@
                             勉強すればするほどRPGゲームのようにレベルが上がっていくので、最高レベルを目指して演習を頑張りましょう！
                         </p>
                     </div>
-
+                    <h2>使い方ガイド</h2>
+                    <div
+                        style="background: white; padding: 20px; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid var(--primary); margin-top: 30px;">
+                        <h3 style="margin-top: 0; color: var(--primary-dark);">💬 開発者にフィードバックを送る</h3>
+                        <p style="font-size: 14px; color: var(--text-main); line-height: 1.6;">
+                            「バグを見つけた」「こんな機能が欲しい！」など、きょうてくんへのご意見・ご要望をお気軽にお送りください。<br>
+                            <span style="font-size: 12px; color: var(--text-muted);">※返信は行えませんのでご了承ください。</span>
+                        </p>
+                        <textarea id="feedback-text" rows="4" placeholder="ここにメッセージを入力してください..."
+                            style="width: 100%; padding: 12px; border-radius: 6px; border: 1px solid var(--border); box-sizing: border-box; font-family: inherit; resize: vertical; margin-bottom: 15px; font-size: 14px;"></textarea>
+                        <button onclick="submitFeedback()" style="width: 100%; font-size: 16px;">メッセージを送信する</button>
+                    </div>
                 </div>
             </section>
         </main>
         <nav class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('tab-home'); updateBottomNav(this)">
-                <div class="nav-icon">🏠</div><span>ホーム</span>
-            </div>
-            <div class="nav-item active" onclick="switchTab('tab-grading'); updateBottomNav(this)">
+            <div class="nav-item" onclick="switchTab('tab-grading'); updateBottomNav(this)">
                 <div class="nav-icon">✏️</div><span>採点</span>
             </div>
             <div class="nav-item" onclick="switchTab('tab-results'); updateBottomNav(this)">
@@ -561,6 +569,9 @@
             </div>
             <div class="nav-item" onclick="switchTab('tab-help'); updateBottomNav(this)">
                 <div class="nav-icon">❓</div><span>ヘルプ</span>
+            </div>
+            <div class="nav-item active" onclick="switchTab('tab-home'); updateBottomNav(this)">
+                <div class="nav-icon">🏠</div><span>ホーム</span>
             </div>
         </nav>
     </div>
