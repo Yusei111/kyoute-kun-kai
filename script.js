@@ -347,7 +347,16 @@ function updateReport() {
                         </p>
                      </div>`;
         }
-        html += `</div></div>`;
+        html += `</div>`;
+        let memoValue = r.memo || ""; // 保存されたメモの復元用
+        html += `<div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 18px; width: 100%; clear: both;">
+                    <label style="display: block; font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 8px;">📝 自己分析メモ（間違えた原因や復習のポイント）</label>
+                    <textarea oninput="saveSubjectMemo('${resultYear}', '${subject}', this.value)" 
+                        placeholder="例：数学ⅠA第3問の確率。補事象（少なくとも〜）を使う発想が抜けていた。" 
+                        style="width: 100%; min-width: 100%; max-width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 90px; background: #f8fafc; color: var(--text-main);">${memoValue}</textarea>
+                 </div>`;
+
+        html += `</div>`; // 科目カード（白いボックス）自体を閉じます
         detailArea.innerHTML += html;
 
     }
@@ -593,6 +602,7 @@ function resetAll() {
 
 
 window.onload = function () {
+    updateCountdown();
     loadYears();
     let saved = localStorage.getItem("subjectResults");
     if (saved) {
@@ -613,7 +623,6 @@ window.onload = function () {
     applyProfile();
     loadFriends();
     updateTopHensachi();
-    updateCountdown();
 }
 
 
@@ -983,6 +992,10 @@ function applyProfile() {
         // ログインしていない場合は未設定にする
         if (displayUserid) {
             displayUserid.textContent = profile.userid ? profile.userid : "未設定";
+        }
+
+        if (displaySchool) {
+            displaySchool.textContent = profile.school ? profile.school : "未設定";
         }
 
         // ユーザーIDを元に、DiceBear APIで固有のアバター画像を生成する
@@ -1770,3 +1783,48 @@ document.addEventListener("DOMContentLoaded", () => {
     // Firebaseの読み込みが終わるのを少し待ってから実行
     setTimeout(initAuthListener, 500);
 });
+// --- フィードバック送信機能 ---
+async function submitFeedback() {
+    let textarea = document.getElementById("feedback-text");
+    let text = textarea.value.trim();
+
+    // 入力欄が空っぽの場合は弾く
+    if (!text) {
+        showCustomConfirm("エラー", "メッセージを入力してから送信してください。", "OK", "", true);
+        return;
+    }
+
+    // 誰が送ってくれたのか分かるように、ローカルのプロフィール情報を取得
+    let profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
+    let userId = profile.userid || "未ログインゲスト";
+    let nickname = profile.nickname || "名無しさん";
+
+    try {
+        // Firebaseの "feedback" という新しいフォルダ（コレクション）にデータを追加
+        await window.addDoc(window.collection(window.db, "feedback"), {
+            userid: userId,
+            nickname: nickname,
+            message: text,
+            createdAt: new Date()
+        });
+
+        // 成功したらオシャレな通知を出して、入力欄を空にする
+        showAchievementToast("送信完了", "貴重なご意見ありがとうございます！", "💌");
+        textarea.value = "";
+
+    } catch (error) {
+        console.error("フィードバック送信エラー: ", error);
+        showCustomConfirm("通信エラー", "送信に失敗しました。時間をおいて再度お試しください。", "OK", "", true);
+    }
+}
+
+// --- ★新規追加：科目ごとの自己分析メモをリアルタイム保存する関数 ---
+function saveSubjectMemo(year, subject, text) {
+    if (subjectResults[year] && subjectResults[year][subject]) {
+        subjectResults[year][subject].memo = text;
+        // ローカルストレージに一括保存（上書き）
+        localStorage.setItem("subjectResults", JSON.stringify(subjectResults));
+    }
+}
+// HTMLの読み込みが完了した直後にもう一度カウントダウンを計算する（念押し）
+document.addEventListener("DOMContentLoaded", updateCountdown);
