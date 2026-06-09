@@ -925,10 +925,16 @@ tfoot {
     }
 
     /* グリッド（バッジ・フレンド一覧）を1列にする */
-    .badges-grid,
     .friend-list-grid {
         grid-template-columns: 1fr !important;
         display: grid !important;
+    }
+
+    /* ★ 実績バッジは広げず、文字の長さに合わせてコンパクトに並べる */
+    .badges-grid {
+        display: flex !important;
+        flex-wrap: wrap !important;
+        gap: 10px !important;
     }
 }
 
