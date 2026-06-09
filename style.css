@@ -865,10 +865,16 @@ tfoot {
 /* --- スマホ表示のさらなる最適化（レイアウト崩れ防止・強力版） --- */
 @media (max-width: 768px) {
 
-    /* 表の横スクロール対応 */
+    /* ★全体が横ズレするのを防ぐ */
     .scoreContainer {
-        overflow-x: auto !important;
         padding-bottom: 15px !important;
+    }
+
+    /* ★テーブルを囲んでいる下のエリアだけを横スクロールさせる */
+    .bottomArea {
+        overflow-x: auto !important;
+        width: 100% !important;
+        padding-bottom: 10px !important;
     }
 
     .scoreTable {
