@@ -692,28 +692,34 @@ function generateDemoResult() {
     updateJudge();
     updateTopHensachi();
 }
-
 // --- タブ切り替え機能 ---
 function switchTab(tabId) {
-    // 全てのタブセクションを非表示にする
-    let sections = document.querySelectorAll('.tab-section');
-    sections.forEach(sec => sec.classList.remove('active'));
+    // 押し間違いや引数のズレを自動修正
+    if (tabId === 'home') tabId = 'tab-home';
 
-    // 全てのサイドバーメニューの選択状態を解除する
-    let menus = document.querySelectorAll('.nav-menu li');
+    // 1. 全てのタブセクションを非表示にする
+    let sections = document.querySelectorAll('.tab-section');
+    sections.forEach(sec => {
+        sec.style.display = 'none';
+        sec.classList.remove('active');
+    });
+
+    // 2. 全てのサイドバーメニュー・ボトムナビの選択状態を解除する
+    let menus = document.querySelectorAll('.nav-menu li, .nav-btn, .bottom-nav .nav-item');
     menus.forEach(menu => menu.classList.remove('active'));
 
-    // クリックされたタブセクションを表示する
-    document.getElementById(tabId).classList.add('active');
-
-    // クリックされたメニューをハイライトする
-    let activeMenu = document.querySelector(`.nav-menu li[onclick="switchTab('${tabId}')"]`);
-    if (activeMenu) {
-        activeMenu.classList.add('active');
+    // 3. クリックされたタブセクションを表示する
+    let targetTab = document.getElementById(tabId);
+    if (targetTab) {
+        targetTab.style.display = 'block';
+        targetTab.classList.add('active');
     }
 
-    // Chart.jsは非表示の状態で更新されると描画がバグることがあるため、
-    // 成績タブが開かれた瞬間にチャートのサイズをリサイズする
+    // 4. クリックされたメニューをハイライトする（PC・スマホ両対応）
+    let activeMenus = document.querySelectorAll(`[onclick*="switchTab('${tabId}')"], [onclick*="switchTab('home')"]`);
+    activeMenus.forEach(menu => menu.classList.add('active'));
+
+    // 5. Chart.jsのリサイズバグ対策
     if (tabId === 'tab-results' && radarChart) {
         radarChart.resize();
     }
