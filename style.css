@@ -1165,3 +1165,37 @@ tfoot {
         gap: 6px;
     }
 }
+
+/* --- スマホ表示の余白（左右の隙間）を極限まで小さくする --- */
+@media (max-width: 768px) {
+
+    /* 1. 画面全体の枠の余白を減らす（上15px、左右10px、下100px） */
+    .main-content {
+        padding: 15px 10px 100px 10px !important;
+    }
+
+    /* 2. 各タブ（白い大きな箱）の内側の余白を減らす（上下20px、左右15px） */
+    .tab-section {
+        padding: 20px 15px !important;
+    }
+
+    /* 3. ホーム画面の「使い方」や「お知らせ」カードの余白を減らす */
+    .info-card,
+    .news-card {
+        padding: 15px !important;
+    }
+
+    /* 4. 各種設定やプロフィールの内側の箱の余白もスッキリさせる */
+    #exam-setup-section,
+    #direct-input-section,
+    .game-profile-container {
+        padding: 20px 15px !important;
+    }
+
+    /* 5. ヘッダー（ホームなどのタイトル）の文字を少しだけコンパクトに */
+    h2 {
+        font-size: 20px !important;
+        padding-bottom: 8px !important;
+        margin-bottom: 15px !important;
+    }
+}
