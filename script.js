@@ -307,12 +307,14 @@ function updateReport() {
             detailArea.innerHTML += html;
             continue;
         }
+        html += `<div class="detail-table-wrapper">`;
         html += `<table class="scoreTable" style="margin-bottom: 25px; box-shadow: none;"><thead><tr><th>大問</th><th>得点 / 満点</th><th>正答率</th></tr></thead><tbody>`;
         r.sectionResults.forEach(sec => {
             let rate = sec.totalCount > 0 ? Math.round((sec.correctCount / sec.totalCount) * 100) : 0;
             html += `<tr><td style="font-weight: bold;">${sec.name}</td><td><strong style="color: var(--accent); font-size: 16px;">${sec.score}</strong> / ${sec.maxScore}</td><td>${rate}%</td></tr>`;
         });
         html += `</tbody></table>`;
+        html += `</div>`;
 
         html += `<h5 style="margin-bottom: 10px; color: var(--text-muted);">設問ごとの判定</h5><div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
         r.details.forEach(d => {
