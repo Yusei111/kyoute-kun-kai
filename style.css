@@ -986,8 +986,15 @@ tfoot {
 
     /* 詳細レポートの横スクロール対応 */
     #detailed-results-area>div {
+        overflow-x: hidden !important;
+        padding-bottom: 0 !important;
+    }
+
+    /* ★ 表だけをスクロールさせるための専用クラス */
+    .detail-table-wrapper {
         overflow-x: auto !important;
-        padding-bottom: 15px !important;
+        width: 100% !important;
+        padding-bottom: 10px !important;
     }
 
     #detailed-results-area .scoreTable {
