@@ -104,20 +104,29 @@
                     style="max-width: 500px; margin: 0 auto; background: var(--surface); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 2px solid var(--primary);">
                     <h3 style="text-align: center; margin-top: 0; color: var(--text-main);">演習の設定</h3>
 
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
-                        <select id="subject" onchange="loadYears()" style="width: 100%;">
-                            <option value="japanese">国語</option>
-                            <option value="englishR">英語R（リーディング）</option>
-                            <option value="englishL">英語L（リスニング）</option>
-                            <option value="math1A">数学ⅠA</option>
-                            <option value="math2BC">数学ⅡBC</option>
-                        </select>
+                    <div id="grading-warning"
+                        style="display:none; color:#b91c1c; margin-bottom:15px; background:#fee2e2; padding:12px; border-radius:6px; border-left: 4px solid #ef4444; font-size:14px; font-weight:bold;">
+                        ⚠️ この年度の受験プランが設定されていません。<br>
+                        まずは「成績確認」タブで受験プラン（科目）を作成してください。
                     </div>
 
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">年度</label>
-                        <select id="year" style="width: 100%;"></select>
+                        <select id="year" onchange="updateGradingSubjects()" style="width: 100%;"></select>
+                    </div>
+
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
+                        <select id="subject" onchange="updateOptionalUI()" style="width: 100%;"></select>
+                    </div>
+
+                    <div id="optional-sections-area"
+                        style="display: none; margin-bottom: 15px; padding: 15px; background: #f8fafc; border: 1px solid var(--border); border-radius: 8px;">
+                        <label
+                            style="display: block; font-weight: bold; margin-bottom: 8px; color: var(--primary-dark);">選択問題</label>
+                        <div id="optional-checkboxes" style="display: flex; flex-wrap: wrap; gap: 10px;"></div>
+                        <p id="optional-error" style="color: #ef4444; font-size: 12px; margin-top: 8px; display: none;">
+                            ※指定された問題数を選択してください</p>
                     </div>
 
                     <div style="margin-bottom: 15px;">
@@ -132,7 +141,8 @@
                             style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
                     </div>
 
-                    <button onclick="startExam()" style="width: 100%; font-size: 18px; padding: 12px;">演習スタート！</button>
+                    <button id="btn-start-exam" onclick="startExam()"
+                        style="width: 100%; font-size: 18px; padding: 12px;">演習スタート！</button>
                 </div>
 
                 <div style="text-align: center; margin-top: 15px;">
@@ -144,21 +154,13 @@
                 <div id="direct-input-section"
                     style="display: none; max-width: 500px; margin: 20px auto 0; background: var(--surface); padding: 30px; border-radius: 12px; box-shadow: var(--shadow); border: 2px dashed var(--primary);">
                     <h3 style="text-align: center; margin-top: 0; color: var(--primary-dark);">手動で点数を入力</h3>
-                    <p style="font-size: 12px; color: #ef4444; margin-bottom: 15px;">※直接入力した成績は全国ランキングに送信できません。</p>
-
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
-                        <select id="direct-subject" onchange="loadDirectYears()" style="width: 100%;">
-                            <option value="japanese">国語</option>
-                            <option value="englishR">英語R（リーディング）</option>
-                            <option value="englishL">英語L（リスニング）</option>
-                            <option value="math1A">数学ⅠA</option>
-                            <option value="math2BC">数学ⅡBC</option>
-                        </select>
-                    </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">年度</label>
-                        <select id="direct-year" style="width: 100%;"></select>
+                        <select id="direct-year" onchange="updateDirectSubjects()" style="width: 100%;"></select>
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">科目</label>
+                        <select id="direct-subject" style="width: 100%;"></select>
                     </div>
                     <div style="margin-bottom: 25px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">得点</label>
@@ -167,9 +169,9 @@
                     </div>
                     <div style="display: flex; gap: 10px;">
                         <button onclick="document.getElementById('direct-input-section').style.display='none'"
-                            style="background: #94a3b8; flex: 1; padding: 12px; font-weight: bold; border: none; border-radius: 4px; color: white;">キャンセル</button>
+                            style="background: #94a3b8; flex: 1; padding: 12px; border: none; border-radius: 4px; color: white;">キャンセル</button>
                         <button onclick="saveDirectScore()"
-                            style="flex: 1; padding: 12px; font-weight: bold; background: var(--primary); color: white; border: none; border-radius: 4px;">成績を登録</button>
+                            style="flex: 1; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 4px;">成績を登録</button>
                     </div>
                 </div>
 
@@ -184,13 +186,9 @@
                             <div style="font-size: 14px;">目標: <strong id="display-target-score"
                                     style="color: #fcd34d; font-size: 18px;">--</strong> 点</div>
                             <div style="background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 6px;">残り時間:
-                                <strong id="display-timer"
-                                    style="color: #ef4444; font-size: 20px; letter-spacing: 1px;">--:--</strong>
+                                <strong id="display-timer" style="color: #ef4444; font-size: 20px;">--:--</strong>
                             </div>
                         </div>
-                    </div>
-                    <div
-                        style="display: flex; justify-content: space-between; align-items: center; background: #1e293b; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                     </div>
 
                     <div
@@ -199,8 +197,8 @@
                             style="display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; color: var(--primary-dark);">📱
                             キーボード・テンキーで連続入力</label>
                         <p style="font-size: 11px; color: var(--text-muted); margin-top: 0; margin-bottom: 8px;">
-                            枠をタップすると数字キーボードが開きます。（予測変換・全角オフ）</p>
-                        <input type="text" id="fast-answer-input" inputmode="numeric" pattern="[0-9\s]*"
+                            枠をタップするとキーボードが開きます。（数学の - や情報の a〜f にも対応）</p>
+                        <input type="text" id="fast-answer-input" inputmode="text" pattern="[0-9a-fA-F\-\s]*"
                             autocomplete="off" spellcheck="false" placeholder="ここをタップして解答を連続入力"
                             style="width: 100%; padding: 12px; font-size: 24px; letter-spacing: 8px; font-family: monospace; border: 1px solid var(--border); border-radius: 6px; box-sizing: border-box; background: #f8fafc;">
                     </div>
@@ -216,82 +214,105 @@
 
             <section id="tab-results" class="tab-section">
                 <h2>成績表・志望校判定</h2>
-                <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
-                    <div>
-                        年度:
-                        <select id="result-year" onchange="updateReport(); updateChart(); updateJudge();"
-                            style="padding: 5px; border-radius: 4px; font-size: 16px;">
-                        </select>
+
+                <div id="plan-setup-area"
+                    style="background: var(--surface); padding: 20px; border-radius: 8px; box-shadow: var(--shadow); margin-bottom: 30px; border: 2px solid var(--primary);">
+                    <h3 style="margin-top:0; color: var(--primary-dark);">📝 1000点満点 受験プランの作成</h3>
+                    <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">
+                        採点を行う前に、ここで受験する年度と文理を選択して1000点満点の枠組みを作成してください。</p>
+                    <div style="display:flex; gap:10px; margin-bottom:15px; flex-wrap: wrap;">
+                        <div style="flex:1; min-width: 120px;">
+                            <label style="font-weight:bold; font-size:14px;">年度</label>
+                            <select id="plan-year" onchange="updatePlanUI()"
+                                style="width: 100%; padding: 8px;"></select>
+                        </div>
+                        <div style="flex:2; min-width: 200px;">
+                            <label style="font-weight:bold; font-size:14px;">文理</label>
+                            <select id="plan-type" onchange="updatePlanUI()" style="width: 100%; padding: 8px;">
+                                <option value="bunkei">文系 (社会2科目 / 理科基礎2科目)</option>
+                                <option value="rikei">理系 (社会1科目 / 理科専門2科目)</option>
+                            </select>
+                        </div>
                     </div>
-                    <div>
-                        志望校:
-                        <select id="university" onchange="updateJudge(); updateChart();"
-                            style="padding: 5px; border-radius: 4px; font-size: 16px;">
-                            <option value="nagoya">名古屋大学</option>
-                            <option value="nagoyaTech">名古屋工業大学</option>
-                            <option value="nanzan">南山大学</option>
-                        </select>
+                    <div id="plan-subjects-area"
+                        style="margin-bottom:20px; background: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid var(--border);">
                     </div>
+                    <button onclick="savePlan()" style="width:100%;">このプランで成績表を作成する</button>
                 </div>
-                <hr>
-                <div class="scoreContainer">
-                    <div class="topArea">
-                        <div class="judgeBox">
-                            <h3>志望校判定</h3>
-                            <div id="judgeLetter">-</div>
-                            <div id="judgeUniversity"></div>
-                            <div
-                                style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #fda4af; text-align: left; font-size: 15px; color: #881337; line-height: 1.6;">
-                                <div>
-                                    <strong>次の判定まで:</strong> <span id="judgeNextPoints">--</span>
-                                </div>
-                                <div>
-                                    <strong>志望校内順位:</strong> <span id="judgeUniRank">--</span>
+
+                <div id="results-display-area" style="display:none;">
+                    <div style="display: flex; gap: 20px; align-items: center; margin-bottom: 20px;">
+                        <div>
+                            成績を見る年度:
+                            <select id="result-year" onchange="updateReport(); updateChart(); updateJudge();"
+                                style="padding: 5px; border-radius: 4px; font-size: 16px;"></select>
+                        </div>
+                        <div>
+                            志望校:
+                            <select id="university" onchange="updateJudge(); updateChart();"
+                                style="padding: 5px; border-radius: 4px; font-size: 16px;">
+                                <option value="nagoya">名古屋大学</option>
+                                <option value="nagoyaTech">名古屋工業大学</option>
+                                <option value="nanzan">南山大学</option>
+                            </select>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="scoreContainer">
+                        <div class="topArea">
+                            <div class="judgeBox">
+                                <h3>志望校判定</h3>
+                                <div id="judgeLetter">-</div>
+                                <div id="judgeUniversity"></div>
+                                <div
+                                    style="margin-top: 20px; padding-top: 15px; border-top: 1px dashed #fda4af; text-align: left; font-size: 15px; color: #881337; line-height: 1.6;">
+                                    <div><strong>次の判定まで:</strong> <span id="judgeNextPoints">--</span></div>
+                                    <div><strong>志望校内順位:</strong> <span id="judgeUniRank">--</span></div>
                                 </div>
                             </div>
+                            <div class="chartBox">
+                                <canvas id="radarChart"></canvas>
+                            </div>
                         </div>
-                        <div class="chartBox">
-                            <canvas id="radarChart"></canvas>
+                        <div class="bottomArea">
+                            <table class="scoreTable">
+                                <thead>
+                                    <tr>
+                                        <th>科目</th>
+                                        <th>得点</th>
+                                        <th>平均</th>
+                                        <th>標準偏差</th>
+                                        <th>偏差値</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportBody"></tbody>
+                                <tfoot>
+                                    <tr>
+                                        <td>1000点満点 合計</td>
+                                        <td id="totalScore"></td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                        <td>-</td>
+                                    </tr>
+                                </tfoot>
+                            </table>
                         </div>
                     </div>
-                    <div class="bottomArea">
-                        <table class="scoreTable">
-                            <thead>
-                                <tr>
-                                    <th>科目</th>
-                                    <th>得点</th>
-                                    <th>平均</th>
-                                    <th>標準偏差</th>
-                                    <th>偏差値</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reportBody"></tbody>
-                            <tfoot>
-                                <tr>
-                                    <td>合計</td>
-                                    <td id="totalScore"></td>
-                                    <td>-</td>
-                                    <td>-</td>
-                                    <td>-</td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-                <div id="overall-feedback-area" style="margin-top: 30px;"></div>
-                <div id="detailed-results-area" style="margin-top: 30px;"></div>
+                    <div id="overall-feedback-area" style="margin-top: 30px;"></div>
+                    <div id="detailed-results-area" style="margin-top: 30px;"></div>
 
-                <hr>
-                <div class="cloud-save-area"
-                    style="text-align: center; margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
-                    <h3>全国ランキングに参加する</h3>
-                    <input type="text" id="nickname" placeholder="ニックネームを入力" style="padding: 8px; font-size: 16px;"
-                        readonly>
-                    <button onclick="saveScoreToCloud()"
-                        style="padding: 8px 16px; font-size: 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">成績をクラウドに保存</button>
+                    <hr>
+                    <div class="cloud-save-area"
+                        style="text-align: center; margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 8px;">
+                        <h3>全国ランキングに参加する</h3>
+                        <input type="text" id="nickname" placeholder="ニックネームを入力" style="padding: 8px; font-size: 16px;"
+                            readonly>
+                        <button onclick="saveScoreToCloud()"
+                            style="padding: 8px 16px; font-size: 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer;">成績をクラウドに保存</button>
+                    </div>
+                    <br>
+                    <button onclick="generateDemoResult()">発表用デモ成績</button>
                 </div>
-                <br>
-                <button onclick="generateDemoResult()">発表用デモ成績</button>
             </section>
 
             <section id="tab-ranking" class="tab-section">
@@ -369,6 +390,10 @@
                             <p id="display-friend-count">0 人</p>
                         </div>
                         <div class="stat-box">
+                            <h4>文理</h4>
+                            <p id="display-profile-bunri" style="font-weight: bold;">未設定</p>
+                        </div>
+                        <div class="stat-box">
                             <h4>高校名</h4>
                             <p id="display-profile-school">未設定</p>
                         </div>
@@ -427,6 +452,14 @@
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">高校名</label>
                         <input type="text" id="profile-school" placeholder="例：〇〇高校"
                             style="width: 100%; padding: 8px; box-sizing: border-box;">
+                    </div>
+                    <div style="margin-bottom: 15px;">
+                        <label style="display: block; font-weight: bold; margin-bottom: 5px;">文理</label>
+                        <select id="profile-bunri" style="width: 100%; padding: 8px; box-sizing: border-box;">
+                            <option value="未設定">選択してください</option>
+                            <option value="文系">文系</option>
+                            <option value="理系">理系</option>
+                        </select>
                     </div>
                     <div style="margin-bottom: 15px;">
                         <label style="display: block; font-weight: bold; margin-bottom: 5px;">学年</label>
@@ -665,6 +698,7 @@
                 ※初めての方はメールアドレスとパスワードを入力して「新規登録」を押してください。</p>
         </div>
     </div>
+    <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
 
