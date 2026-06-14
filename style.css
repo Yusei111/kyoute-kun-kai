@@ -205,15 +205,15 @@ input[type="text"]:focus {
 }
 
 /* =========================================
-   5. マークシート（テーブル）のデザイン
-   ========================================= */
-/* =========================================
    5. マークシートのデザイン（本物志向）
    ========================================= */
 .sheet-container {
     display: flex;
     justify-content: center;
     margin: 30px 0;
+    width: 100%;
+    overflow-x: auto;
+    /* ★追加：スマホなどの小さな画面でも安全に横スクロールできるようにする */
 }
 
 .mark-sheet-block {
@@ -222,13 +222,18 @@ input[type="text"]:focus {
     border-radius: 12px;
     box-shadow: var(--shadow);
     border: 1px solid var(--border);
-    max-width: 600px;
+    max-width: fit-content;
+    /* ★変更：600pxの制限を解除し、中身に合わせて枠を広げる */
+    margin: 0 auto;
+    /* ★追加：画面のど真ん中にセンタリングする */
 }
 
 /* 1問ごとの行 */
 .mark-row {
     display: flex;
     align-items: center;
+    justify-content: center;
+    /* ★追加：行の中身を中央に寄せる */
     margin-bottom: 12px;
     padding-bottom: 12px;
     border-bottom: 1px dashed #e2e8f0;
@@ -240,38 +245,38 @@ input[type="text"]:focus {
     padding-bottom: 0;
 }
 
-/* 左側の解答番号（丸の拡大に合わせて少し大きくします） */
+/* 左側の解答番号 */
 .q-num {
     background: #f8fafc;
     color: #475569;
     font-size: 18px;
-    /* 16px -> 18px */
     font-weight: bold;
     width: 44px;
-    /* 36px -> 44px */
     height: 44px;
-    /* 36px -> 44px */
     display: flex;
     justify-content: center;
     align-items: center;
     border-radius: 8px;
-    margin-right: 30px;
+    margin-right: 20px;
+    /* ★30pxから少し狭めてバランスを良くする */
     border: 2px solid #e2e8f0;
+    flex-shrink: 0;
+    /* ★追加：画面が狭くても潰れないようにする */
 }
 
-/* 丸を横に並べる */
+/* 丸を横に並べる（10個で折り返して左詰めにする魔法） */
 .bubbles {
-    display: flex;
-    gap: 16px;
-    /* 押し間違いを防ぐため、12px -> 16px へ隙間を広げます */
+    display: grid;
+    grid-template-columns: repeat(10, max-content);
+    /* ★1列に10個並べる方眼紙を作る */
+    gap: 10px;
+    justify-content: center;
 }
 
-/* 選択肢の丸（タップしやすい44pxへ拡大） */
+/* 選択肢の丸 */
 .choice.bubble {
     width: 44px;
-    /* 32px -> 44px */
     height: 44px;
-    /* 32px -> 44px */
     border: 2px solid #94a3b8;
     border-radius: 50%;
     display: flex;
@@ -280,12 +285,12 @@ input[type="text"]:focus {
     color: #64748b;
     font-weight: bold;
     font-size: 18px;
-    /* 15px -> 18px */
     cursor: pointer;
     background: white;
     transition: all 0.2s;
-    /* タップした時に青い枠が出るのを防ぐ（スマホ向け） */
     -webkit-tap-highlight-color: transparent;
+    flex-shrink: 0;
+    /* ★追加：画面が狭くても丸が潰れないようにする */
 }
 
 /* マウスを乗せたとき */
