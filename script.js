@@ -1,107 +1,28 @@
-let pastTests = {
-    japanese: {
-        2022: {
-            answers: "000000000000000000000000000000000000000000000000",
-            defaultPoint: 4,
-            avg: 110,
-            sd: 20
-        },
-        2023: {
-            answers: "000000000000000000000000000000000000000000000000",
-            defaultPoint: 4,
-            avg: 110,
-            sd: 20
-        }
-    },
-    englishR: {
-        2022: {
-            answers: "1324123443211324123443211324123443211324",
-            defaultPoint: 2.5,
-            avg: 61.8,
-            sd: 15.4
-        }
-    },
-    englishL: {
-        2022: {
-            answers: "12341234432113241234432113241234",
-            defaultPoint: 3,
-            avg: 57.2,
-            sd: 14.8
-        }
-    },
-    math1A: {
-        2022: {
-            answers: "1234512345123451234512345",
-            defaultPoint: 4,
-            avg: 48.5,
-            sd: 16.2,
-            // ★ 追加: 大問ごとの設問数を指定する
-            sections: [
-                { name: "第1問", count: 5 },  // 最初の5問
-                { name: "第2問", count: 5 },  // 次の5問
-                { name: "第3問", count: 5 },
-                { name: "第4問", count: 5 },
-                { name: "第5問", count: 5 }
-            ]
-        }
-    },
-    math2BC: {
-        2022: {
-            answers: "1234512345123451234512345",
-            defaultPoint: 4,
-            avg: 51.3,
-            sd: 15.9
-        }
-    }
-};
-
-let subjectMax = {
-    japanese: 200,
-    englishR: 100,
-    englishL: 100,
-    math1A: 100,
-    math2BC: 100,
-    physics: 100,
-    chemistry: 100,
-    info: 100,
-    geography: 100
-};
-
-// ★ ここで科目の名前を「1つ」にまとめました
-let subjectNames = {
-    japanese: "国語",
-    englishR: "英語R",
-    englishL: "英語L",
-    math1A: "数ⅠA",
-    math2BC: "数ⅡBC",
-    physics: "物理",
-    chemistry: "化学",
-    info: "情報",
-    geography: "地理"
-};
-
-let universities = {
-    nagoya: {
-        name: "名古屋大学",
-        border: 65
-    },
-    nagoyaTech: {
-        name: "名古屋工業大学",
-        border: 60
-    },
-    nanzan: {
-        name: "南山大学",
-        border: 55
-    }
-};
-
 // アプリ全体で使う変数の準備
 let userAnswers = [];
 let subjectResults = {};
 let radarChart = null;
+let examPlans = {}; // ★新規追加：受験プランを保存する変数
 
-// ↓この下から function updateSheet() { ... が続きます
-
+// --- 新規追加：科目とデータに応じた問題番号（ア・イ・ウ…など）を生成する関数 ---
+function getQuestionLabels(subject, data) {
+    let labels = [];
+    if (subject === "math1A" || subject === "math2BC" || subject === "jouhou1") {
+        const kana = ["ア", "イ", "ウ", "エ", "オ", "カ", "キ", "ク", "ケ", "コ", "サ", "シ", "ス", "セ", "ソ", "タ", "チ", "ツ", "テ", "ト", "ナ", "ニ", "ヌ", "ネ", "ノ", "ハ", "ヒ", "フ", "ヘ", "ホ", "マ", "ミ", "ム", "メ", "モ", "ヤ", "ユ", "ヨ", "ラ", "リ", "ル", "レ", "ロ", "ワ"];
+        if (data.sections) {
+            for (let sIdx = 0; sIdx < data.sections.length; sIdx++) {
+                let cCount = 0;
+                for (let i = 0; i < data.sections[sIdx].count; i++) {
+                    labels.push(kana[cCount % kana.length]);
+                    cCount++;
+                }
+            }
+        }
+    } else {
+        for (let i = 0; i < data.answers.length; i++) labels.push((i + 1).toString());
+    }
+    return labels;
+}
 
 function updateSheet() {
     let subject = document.getElementById("subject").value;
@@ -112,60 +33,85 @@ function updateSheet() {
     container.innerHTML = "";
     userAnswers = [];
 
-    let fastInput = document.getElementById("fast-answer-input");
-    if (fastInput) fastInput.value = "";
+    // 連続入力欄の文字をリセット
+    let fastInputElem = document.getElementById("fast-answer-input");
+    if (fastInputElem) {
+        fastInputElem.value = "";
+    }
 
-    // マークシート全体の枠
     let markSheetBlock = document.createElement("div");
     markSheetBlock.className = "mark-sheet-block";
 
-    // 設問数ぶんループして、1行ずつ作る
-    for (let q = 0; q < data.answers.length; q++) {
-        let row = document.createElement("div");
-        row.className = "mark-row";
-        row.dataset.q = q;
+    let labels = getQuestionLabels(subject, data);
+    let currentQ = 0;
 
-        // 左側：解答番号
-        let qNum = document.createElement("div");
-        qNum.className = "q-num";
-        qNum.textContent = (q + 1);
-        row.appendChild(qNum);
+    // 選ばれた大問だけを画面に作る
+    for (let sIdx = 0; sIdx < data.sections.length; sIdx++) {
+        let sec = data.sections[sIdx];
+        let isSelected = window.selectedSections.includes(sIdx);
 
-        // 右側：マークの丸を並べるコンテナ
-        let bubbles = document.createElement("div");
-        bubbles.className = "bubbles";
-
-        // 0〜9の丸を生成
-        for (let i = 0; i < 10; i++) {
-            let bubble = document.createElement("div");
-            bubble.className = "choice bubble";
-            bubble.textContent = i;
-            bubbles.appendChild(bubble);
+        if (isSelected) {
+            // 大問の見出しを追加
+            let secHeader = document.createElement("div");
+            secHeader.style.padding = "10px"; secHeader.style.background = "#f1f5f9"; secHeader.style.color = "#334155";
+            secHeader.style.fontWeight = "bold"; secHeader.style.margin = "20px 0 10px"; secHeader.style.borderRadius = "6px";
+            secHeader.textContent = sec.name;
+            markSheetBlock.appendChild(secHeader);
         }
 
-        row.appendChild(bubbles);
-        markSheetBlock.appendChild(row);
-    }
+        for (let i = 0; i < sec.count; i++) {
+            if (isSelected) {
+                let row = document.createElement("div");
+                row.className = "mark-row";
+                row.dataset.q = currentQ; // 絶対インデックスを記憶
 
+                let qNum = document.createElement("div");
+                qNum.className = "q-num";
+                qNum.textContent = labels[currentQ];
+                row.appendChild(qNum);
+
+                let bubbles = document.createElement("div");
+                bubbles.className = "bubbles";
+
+                // 科目に応じて丸の種類と横幅（列数）を変更する
+                let choices = [];
+                if (subject === "jouhou1") {
+                    choices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f'];
+                } else if (subject === "math1A" || subject === "math2BC") {
+                    choices = ['-', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                    bubbles.style.gridTemplateColumns = "repeat(11, max-content)";
+                } else {
+                    choices = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+                }
+
+                choices.forEach(c => {
+                    let bubble = document.createElement("div");
+                    bubble.className = "choice bubble";
+                    bubble.textContent = c;
+                    bubbles.appendChild(bubble);
+                });
+
+                row.appendChild(bubbles);
+                markSheetBlock.appendChild(row);
+            }
+            currentQ++;
+        }
+    }
     container.appendChild(markSheetBlock);
 }
 
-
-// ② クリックして色を塗る処理（divの構造に合わせて少し修正）
+// クリックして色を塗る処理
 document.addEventListener("click", function (e) {
     if (e.target.classList.contains("choice")) {
-        // クリックされた丸が含まれる「行」を取得
         let row = e.target.closest(".mark-row");
         let q = row.dataset.q;
 
-        // その行の他の丸の色をリセット
         row.querySelectorAll(".choice").forEach(c => {
             c.classList.remove("selected");
         });
 
-        // クリックした丸を塗りつぶす
         e.target.classList.add("selected");
-        userAnswers[q] = Number(e.target.textContent);
+        userAnswers[q] = e.target.textContent;
 
         if (typeof updateFastInputDisplay === 'function') {
             updateFastInputDisplay();
@@ -173,7 +119,7 @@ document.addEventListener("click", function (e) {
     }
 });
 
-
+// --- 採点機能（完答・順不同対応版・エラー防止強化） ---
 function gradeTest() {
     let subject = document.getElementById("subject").value;
     let year = document.getElementById("year").value;
@@ -184,197 +130,414 @@ function gradeTest() {
     let sectionResults = [];
     let currentQ = 0;
     let sections = data.sections || [{ name: "全問", count: data.answers.length }];
+    let labels = getQuestionLabels(subject, data);
 
-    sections.forEach(sec => {
+    let tempDetails = [];
+    for (let i = 0; i < data.answers.length; i++) {
+        let ans = String(data.answers[i]);
+        let userAns = userAnswers[i] !== undefined ? String(userAnswers[i]) : "";
+        let isCorrect = (userAns === ans);
+        let point = (data.exceptions && data.exceptions[i] !== undefined) ? data.exceptions[i] : data.defaultPoint;
+        tempDetails.push({ qNum: labels[i], isCorrect: isCorrect, point: point, originalPoint: point, groupPassed: true });
+    }
+
+    if (data.kantouGroups) {
+        data.kantouGroups.forEach(group => {
+            let allCorrect = group.every(idx => tempDetails[idx].isCorrect);
+            if (allCorrect) {
+                let totalPoint = tempDetails[group[0]].originalPoint;
+                group.forEach((idx, i) => { tempDetails[idx].point = (i === 0) ? totalPoint : 0; tempDetails[idx].groupPassed = true; });
+            } else {
+                group.forEach(idx => { tempDetails[idx].point = 0; tempDetails[idx].groupPassed = false; });
+            }
+        });
+    }
+
+    if (data.unorderedGroups) {
+        data.unorderedGroups.forEach(group => {
+            let correctAnswers = group.map(idx => String(data.answers[idx])).sort();
+            let uAnswers = group.map(idx => userAnswers[idx] !== undefined ? String(userAnswers[idx]) : "").sort();
+            let isMatch = JSON.stringify(correctAnswers) === JSON.stringify(uAnswers);
+            if (isMatch) {
+                let totalPoint = tempDetails[group[0]].originalPoint;
+                group.forEach((idx, i) => { tempDetails[idx].isCorrect = true; tempDetails[idx].point = (i === 0) ? totalPoint : 0; tempDetails[idx].groupPassed = true; });
+            } else {
+                group.forEach(idx => { tempDetails[idx].isCorrect = correctAnswers.includes(userAnswers[idx]); tempDetails[idx].point = 0; tempDetails[idx].groupPassed = false; });
+            }
+        });
+    }
+
+    sections.forEach((sec, sIdx) => {
+        let isSelected = window.selectedSections ? window.selectedSections.includes(sIdx) : true;
         let secData = { name: sec.name, score: 0, maxScore: 0, correctCount: 0, totalCount: sec.count };
+
         for (let i = 0; i < sec.count; i++) {
             if (currentQ >= data.answers.length) break;
-            let qIndex = currentQ;
-            let ans = Number(data.answers[qIndex]);
-            let userAns = userAnswers[qIndex];
-            let point = (data.exceptions && data.exceptions[qIndex] !== undefined) ? data.exceptions[qIndex] : data.defaultPoint;
-            let isCorrect = (userAns === ans);
-
-            if (isCorrect) {
-                secData.score += point;
-                secData.correctCount++;
-                score += point;
+            let d = tempDetails[currentQ];
+            if (isSelected) {
+                if (d.groupPassed && d.isCorrect) { secData.score += d.point; secData.correctCount++; score += d.point; }
+                if (d.originalPoint > 0) { secData.maxScore += d.originalPoint; }
+                details.push(d);
             }
-            secData.maxScore += point;
-            details.push({ qNum: qIndex + 1, isCorrect: isCorrect, point: isCorrect ? point : 0 });
             currentQ++;
         }
-        sectionResults.push(secData);
+        if (isSelected) sectionResults.push(secData);
     });
 
     let hensachi = ((score - data.avg) / data.sd) * 10 + 50;
+    if (!subjectResults[year]) subjectResults[year] = {};
 
-    let isFirstTime = false;
-    if (!subjectResults[year] || !subjectResults[year][subject]) {
-        isFirstTime = true;
-    }
-
-    // ★ 年度ごとの箱がなければ新しく作る
-    if (!subjectResults[year]) {
-        subjectResults[year] = {};
-    }
-
-    subjectResults[year][subject] = {
-        score: score, avg: data.avg, sd: data.sd, hensachi: hensachi,
-        sectionResults: sectionResults, details: details
-    };
-
+    subjectResults[year][subject] = { score: score, avg: data.avg, sd: data.sd, hensachi: hensachi, sectionResults: sectionResults, details: details };
     localStorage.setItem("subjectResults", JSON.stringify(subjectResults));
 
-    // ★ 採点後、いま解いた年度を自動的に選択状態にする
-    loadResultYears();
-    document.getElementById("result-year").value = year;
+    // ★ エラーが起きても絶対に処理が止まらないように保護
+    try {
+        if (typeof loadResultYears === 'function') loadResultYears();
+        let ry = document.getElementById("result-year");
+        if (ry) ry.value = year;
+        if (typeof playSound === 'function') playSound('grade');
+        if (typeof updateReport === 'function') updateReport();
+        if (typeof updateChart === 'function') updateChart();
+        if (typeof updateJudge === 'function') updateJudge();
+        if (typeof updateTopHensachi === 'function') updateTopHensachi();
+    } catch (e) { console.error("画面更新エラー:", e); }
 
-    playSound('grade');
+    try {
+        if (typeof timerInterval !== 'undefined') clearInterval(timerInterval);
+        if (typeof backToSetup === 'function') backToSetup(true);
+    } catch (e) { console.error("設定リセットエラー:", e); }
 
-    updateReport();
-    updateChart();
-    updateJudge();
-    updateTopHensachi();
-    if (isFirstTime) {
-        addExp(100);
-    } else {
-        setTimeout(() => {
-            showAchievementToast("成績更新", "最新の解答で成績を上書きしました（EXP獲得済み）", "📝");
-        }, 500);
-    }
-
-    clearInterval(timerInterval);
-    backToSetup(true);
+    // ★ 確実に成績確認タブへ移動！
     switchTab('tab-results');
 }
 
+// ==========================================
+// ★新規追加：受験プラン作成・連動機能群
+// ==========================================
 
+function loadPlanYears() {
+    let years = new Set();
+    for (let sub in pastTests) {
+        Object.keys(pastTests[sub]).forEach(y => years.add(y));
+    }
+    let yearSelect = document.getElementById("plan-year");
+    if (!yearSelect) return;
+    yearSelect.innerHTML = "";
+    Array.from(years).sort().forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}">${year}年度</option>`;
+    });
+    updatePlanUI();
+}
+
+function updatePlanUI() {
+    let type = document.getElementById("plan-type").value;
+    let area = document.getElementById("plan-subjects-area");
+
+    let required = [
+        { id: "japanese", name: "国語 (200点)" },
+        { id: "englishR", name: "英語R (100点)" },
+        { id: "englishL", name: "英語L (100点)" },
+        { id: "math1A", name: "数学ⅠA (100点)" },
+        { id: "math2BC", name: "数学ⅡBC (100点)" },
+        { id: "jouhou1", name: "情報Ⅰ (100点)" }
+    ];
+
+    let social = [
+        { id: "rekishiNihon", name: "日本史探究" }, { id: "rekishiSekai", name: "世界史探究" },
+        { id: "chiriSougou", name: "地理総合探究" }, { id: "koukyouRinri", name: "公共・倫理" }, { id: "koukyouKeizai", name: "公共・政経" }
+    ];
+
+    let scienceKiso = [
+        { id: "butsuriKiso", name: "物理基礎" }, { id: "kagakuKiso", name: "化学基礎" }, { id: "seibutsuKiso", name: "生物基礎" }
+    ];
+
+    let science = [
+        { id: "butsuri", name: "物理" }, { id: "kagaku", name: "化学" }, { id: "seibutsu", name: "生物" }, { id: "chigaku", name: "地学" }
+    ];
+
+    let html = `<div style="margin-bottom:15px;"><strong style="color:var(--primary-dark);">■ 必須科目 (計700点)</strong><br><div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">`;
+    required.forEach(s => {
+        html += `<label style="font-size:14px; color:#64748b;"><input type="checkbox" class="plan-req" value="${s.id}" checked disabled> ${s.name}</label>`;
+    });
+    html += `</div></div>`;
+
+    if (type === "bunkei") {
+        html += `<div style="margin-bottom:15px;"><strong style="color:var(--primary-dark);">■ 地歴公民 (2科目選択 / 計200点)</strong><br><div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">`;
+        social.forEach(s => html += `<label style="font-size:14px; cursor:pointer;"><input type="checkbox" class="plan-soc" value="${s.id}"> ${s.name}</label>`);
+        html += `</div></div>`;
+
+        html += `<div><strong style="color:var(--primary-dark);">■ 理科基礎 (2科目選択 / 計100点)</strong><br><div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">`;
+        scienceKiso.forEach(s => html += `<label style="font-size:14px; cursor:pointer;"><input type="checkbox" class="plan-sci" value="${s.id}"> ${s.name}</label>`);
+        html += `</div></div>`;
+    } else {
+        html += `<div style="margin-bottom:15px;"><strong style="color:var(--primary-dark);">■ 地歴公民 (1科目選択 / 計100点)</strong><br><div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">`;
+        social.forEach(s => html += `<label style="font-size:14px; cursor:pointer;"><input type="checkbox" class="plan-soc" value="${s.id}"> ${s.name}</label>`);
+        html += `</div></div>`;
+
+        html += `<div><strong style="color:var(--primary-dark);">■ 理科専門 (2科目選択 / 計200点)</strong><br>
+        <span style="font-size:11px; color:#ef4444;">※現在過去問データがあるのは物理のみですが、目標管理のために選択できます。</span>
+        <div style="display:flex; flex-wrap:wrap; gap:10px; margin-top:5px;">`;
+        science.forEach(s => html += `<label style="font-size:14px; cursor:pointer;"><input type="checkbox" class="plan-sci" value="${s.id}"> ${s.name}</label>`);
+        html += `</div></div>`;
+    }
+
+    area.innerHTML = html;
+}
+
+// ★変更：途中で「待った（ポップアップの返事待ち）」をかけるため、async を追加
+async function savePlan() {
+    let year = document.getElementById("plan-year").value;
+    let type = document.getElementById("plan-type").value;
+
+    let subjects = [];
+    document.querySelectorAll(".plan-req:checked").forEach(e => subjects.push(e.value));
+
+    let socCount = document.querySelectorAll(".plan-soc:checked").length;
+    let sciCount = document.querySelectorAll(".plan-sci:checked").length;
+
+    if (type === "bunkei") {
+        if (socCount !== 2) { alert("文系は地歴公民を2科目選択してください。"); return; }
+        if (sciCount !== 2) { alert("文系は理科基礎を2科目選択してください。"); return; }
+    } else {
+        if (socCount !== 1) { alert("理系は地歴公民を1科目選択してください。"); return; }
+        if (sciCount !== 2) { alert("理系は理科専門を2科目選択してください。"); return; }
+    }
+
+    // ===============================================
+    // ★新規追加：すでに成績が保存されている場合の「警告とリセット処理」
+    // ===============================================
+    let hasResults = subjectResults[year] && Object.keys(subjectResults[year]).length > 0;
+
+    if (hasResults) {
+        let msg = `${year}年度はすでに成績が保存されています。\n\nプランを新しく作り直すと、現在保存されている ${year}年度の成績データは【すべて消去（リセット）】されてしまいます。\n\n本当に上書きしてプランを作り直しますか？`;
+
+        // 警告ポップアップを出し、ユーザーの選択を待つ
+        let isOk = await showCustomConfirm("⚠️ 警告：成績リセット", msg, "上書きする", "キャンセル");
+
+        // 「キャンセル」が押されたらここで処理をストップ
+        if (!isOk) return;
+
+        // 「上書きする」が押されたら、その年度の成績を完全に削除する
+        delete subjectResults[year];
+        localStorage.setItem("subjectResults", JSON.stringify(subjectResults));
+    }
+    // ===============================================
+
+    document.querySelectorAll(".plan-soc:checked").forEach(e => subjects.push(e.value));
+    document.querySelectorAll(".plan-sci:checked").forEach(e => subjects.push(e.value));
+
+    examPlans[year] = { type: type, subjects: subjects };
+    localStorage.setItem("examPlans", JSON.stringify(examPlans));
+
+    if (typeof showAchievementToast === 'function') {
+        showAchievementToast("プラン作成", `${year}年度の受験プランを作成しました！`, "📝");
+    } else {
+        alert(`${year}年度の受験プランを作成しました！`);
+    }
+
+    loadGradingYears();
+    loadResultYears();
+    document.getElementById("result-year").value = year;
+    updateReport();
+    if (typeof updateChart === 'function') updateChart();
+}
+
+function loadGradingYears() {
+    let yearSelect = document.getElementById("year");
+    if (!yearSelect) return;
+    let currentVal = yearSelect.value;
+    yearSelect.innerHTML = "";
+
+    let years = new Set();
+    for (let sub in pastTests) Object.keys(pastTests[sub]).forEach(y => years.add(y));
+
+    Array.from(years).sort().forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}">${year}年度</option>`;
+    });
+
+    if (Array.from(years).includes(currentVal)) yearSelect.value = currentVal;
+    updateGradingSubjects();
+}
+
+function updateGradingSubjects() {
+    let year = document.getElementById("year").value;
+    let warning = document.getElementById("grading-warning");
+    let subjSelect = document.getElementById("subject");
+    let startBtn = document.getElementById("btn-start-exam");
+    let optArea = document.getElementById("optional-sections-area");
+
+    // プランがない年度を選んだら警告を出してブロック
+    if (!examPlans[year]) {
+        warning.style.display = "block";
+        subjSelect.innerHTML = `<option value="">科目が選択できません</option>`;
+        subjSelect.disabled = true;
+        if (startBtn) startBtn.disabled = true;
+        if (optArea) optArea.style.display = "none";
+        return;
+    }
+
+    warning.style.display = "none";
+    subjSelect.disabled = false;
+    if (startBtn) startBtn.disabled = false;
+
+    subjSelect.innerHTML = "";
+    examPlans[year].subjects.forEach(sub => {
+        // 過去問データが存在する科目のみ表示
+        if (pastTests[sub] && pastTests[sub][year]) {
+            subjSelect.innerHTML += `<option value="${sub}">${subjectNames[sub]}</option>`;
+        }
+    });
+
+    if (subjSelect.options.length === 0) {
+        subjSelect.innerHTML = `<option value="">選択できる過去問がありません</option>`;
+        subjSelect.disabled = true;
+        if (startBtn) startBtn.disabled = true;
+    }
+    updateOptionalUI();
+}
+
+function updateOptionalUI() {
+    let subject = document.getElementById("subject").value;
+    let year = document.getElementById("year").value;
+    if (!subject || !year || !pastTests[subject] || !pastTests[subject][year]) return;
+
+    let data = pastTests[subject][year];
+    let optArea = document.getElementById("optional-sections-area");
+    let checkboxesDiv = document.getElementById("optional-checkboxes");
+
+    if (data.optionalChoices) {
+        optArea.style.display = "block";
+        checkboxesDiv.innerHTML = "";
+        let start = data.optionalChoices.startSection;
+        for (let i = start; i < data.sections.length; i++) {
+            let sec = data.sections[i];
+            let label = document.createElement("label");
+            label.style.display = "flex"; label.style.alignItems = "center"; label.style.gap = "5px"; label.style.cursor = "pointer";
+            let cb = document.createElement("input");
+            cb.type = "checkbox"; cb.className = "optional-cb"; cb.value = i;
+            if (i < start + data.optionalChoices.choose) cb.checked = true;
+            label.appendChild(cb); label.appendChild(document.createTextNode(sec.name));
+            checkboxesDiv.appendChild(label);
+        }
+    } else {
+        optArea.style.display = "none";
+    }
+}
+
+// --- 成績表の更新（1000点満点対応） ---
 function updateReport() {
     let resultYear = document.getElementById("result-year") ? document.getElementById("result-year").value : null;
-    let currentResults = (resultYear && subjectResults[resultYear]) ? subjectResults[resultYear] : {};
+    let displayArea = document.getElementById("results-display-area");
 
+    if (!resultYear || !examPlans[resultYear]) {
+        if (displayArea) displayArea.style.display = "none";
+        return;
+    }
+
+    if (displayArea) displayArea.style.display = "block";
+
+    let currentResults = subjectResults[resultYear] || {};
+    let plan = examPlans[resultYear];
     let body = document.getElementById("reportBody");
     body.innerHTML = "";
-    let total = 0;
+    let totalScore = 0;
 
-    for (let subject in currentResults) {
+    // 1000点満点の枠組みに従って表を描画
+    plan.subjects.forEach(subject => {
         let r = currentResults[subject];
-        total += r.score;
-        let row = `<tr>
-            <td>${subjectNames[subject] || subject}</td>
-            <td>${r.score}</td><td>${r.avg}</td><td>${r.sd}</td><td>${r.hensachi.toFixed(1)}</td>
-        </tr>`;
-        body.innerHTML += row;
-    }
+        let max = subjectMax[subject];
 
-    document.getElementById("totalScore").textContent = total;
+        if (r) {
+            totalScore += r.score;
+            let row = `<tr>
+                <td>${subjectNames[subject]}</td>
+                <td><strong style="color:var(--accent); font-size:16px;">${r.score}</strong> / ${max}</td>
+                <td>${r.avg}</td><td>${r.sd}</td><td>${r.hensachi.toFixed(1)}</td>
+            </tr>`;
+            body.innerHTML += row;
+        } else {
+            let row = `<tr style="opacity: 0.6; background:#f8fafc;">
+                <td>${subjectNames[subject]}</td>
+                <td>未受験 / ${max}</td>
+                <td>-</td><td>-</td><td>-</td>
+            </tr>`;
+            body.innerHTML += row;
+        }
+    });
 
-    if (currentResults.englishR || currentResults.englishL) {
-        let rScore = currentResults.englishR ? currentResults.englishR.score : 0;
-        let lScore = currentResults.englishL ? currentResults.englishL.score : 0;
-        let engTotal = rScore + lScore;
-        body.innerHTML += `<tr style="background: #f0fdf4; font-weight: bold; border-top: 2px solid #bbf7d0;">
-            <td style="color: #16a34a;">【合算】英語総合</td><td><span style="font-size: 16px; color: #16a34a;">${engTotal}</span> / 200</td><td>-</td><td>-</td><td>-</td></tr>`;
-    }
-
-    if (currentResults.math1A || currentResults.math2BC) {
-        let m1Score = currentResults.math1A ? currentResults.math1A.score : 0;
-        let m2Score = currentResults.math2BC ? currentResults.math2BC.score : 0;
-        let mathTotal = m1Score + m2Score;
-        body.innerHTML += `<tr style="background: #f0fdf4; font-weight: bold;">
-            <td style="color: #16a34a;">【合算】数学総合</td><td><span style="font-size: 16px; color: #16a34a;">${mathTotal}</span> / 200</td><td>-</td><td>-</td><td>-</td></tr>`;
-    }
+    document.getElementById("totalScore").innerHTML = `<span style="font-size:24px; color:var(--accent);">${totalScore}</span>`;
 
     let detailArea = document.getElementById("detailed-results-area");
     if (!detailArea) return;
     detailArea.innerHTML = "<h3 style='border-bottom: 2px solid var(--border); padding-bottom: 10px;'>大問別・設問別 詳細レポート</h3>";
 
-    if (Object.keys(currentResults).length === 0) {
-        detailArea.innerHTML += "<p style='color: var(--text-muted);'>この年度の成績データはありません。</p>";
-        return;
-    }
-
-    for (let subject in currentResults) {
+    let hasDetails = false;
+    plan.subjects.forEach(subject => {
         let r = currentResults[subject];
-        if (!r.sectionResults || !r.details) continue;
+        if (!r || !r.sectionResults || !r.details) return;
+        hasDetails = true;
 
         let html = `<div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: var(--shadow);">`;
-        html += `<h4 style="margin-top: 0; color: var(--primary-dark);">${subjectNames[subject] || subject}</h4>`;
+        html += `<h4 style="margin-top: 0; color: var(--primary-dark);">${subjectNames[subject]}</h4>`;
         if (r.isDirectInput) {
-            html += `<p style="color: var(--text-muted); font-size: 14px;">※この科目は手動で点数が入力されたため、大問・設問ごとの詳細データや弱点分析はありません。</p>`;
-            html += `</div>`;
+            html += `<p style="color: var(--text-muted); font-size: 14px;">※手動で入力されたため、詳細データはありません。</p></div>`;
             detailArea.innerHTML += html;
-            continue;
+            return;
         }
+
         html += `<div class="detail-table-wrapper">`;
         html += `<table class="scoreTable" style="margin-bottom: 25px; box-shadow: none;"><thead><tr><th>大問</th><th>得点 / 満点</th><th>正答率</th></tr></thead><tbody>`;
         r.sectionResults.forEach(sec => {
             let rate = sec.totalCount > 0 ? Math.round((sec.correctCount / sec.totalCount) * 100) : 0;
             html += `<tr><td style="font-weight: bold;">${sec.name}</td><td><strong style="color: var(--accent); font-size: 16px;">${sec.score}</strong> / ${sec.maxScore}</td><td>${rate}%</td></tr>`;
         });
-        html += `</tbody></table>`;
-        html += `</div>`;
+        html += `</tbody></table></div>`;
 
         html += `<h5 style="margin-bottom: 10px; color: var(--text-muted);">設問ごとの判定</h5><div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
         r.details.forEach(d => {
-            let mark = d.isCorrect ? `<span style="color: #16a34a; font-size: 20px; font-weight: bold;">〇</span>` : `<span style="color: #ef4444; font-size: 20px; font-weight: bold;">×</span>`;
-            let bg = d.isCorrect ? `#f0fdf4` : `#fef2f2`;
-            html += `<div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 5px; width: 45px; text-align: center; background: ${bg};"><div style="font-size: 11px; color: var(--text-muted);">問${d.qNum}</div><div style="margin: 2px 0;">${mark}</div><div style="font-size: 11px; font-weight: bold; color: ${d.isCorrect ? '#16a34a' : '#ef4444'};">${d.point}点</div></div>`;
-        });
+            let mark = ""; let color = ""; let bg = "";
+            if (d.groupPassed && d.isCorrect) { mark = "〇"; color = "#16a34a"; bg = "#f0fdf4"; }
+            else if (!d.groupPassed && d.isCorrect) { mark = "△"; color = "#eab308"; bg = "#fefce8"; }
+            else { mark = "×"; color = "#ef4444"; bg = "#fef2f2"; }
 
-        // ★ 修正ポイント：ここで「設問ごとの判定（〇×）」の箱を確実に閉じます！
+            let displayQNum = isNaN(d.qNum) ? d.qNum : `問${d.qNum}`;
+            html += `<div style="border: 1px solid var(--border); border-radius: 6px; padding: 8px 5px; width: 45px; text-align: center; background: ${bg};"><div style="font-size: 11px; color: var(--text-muted);">${displayQNum}</div><div style="margin: 2px 0;"><span style="color: ${color}; font-size: 20px; font-weight: bold;">${mark}</span></div><div style="font-size: 11px; font-weight: bold; color: ${color};">${d.point}点</div></div>`;
+        });
         html += `</div>`;
 
         let weakPoints = [];
         r.sectionResults.forEach(sec => {
             let rate = sec.totalCount > 0 ? (sec.correctCount / sec.totalCount) : 0;
-            // 正答率60%未満を「弱点」としてピックアップする
-            if (rate < 0.6) {
-                weakPoints.push(sec.name);
-            }
+            if (rate < 0.6) weakPoints.push(sec.name);
         });
 
         if (weakPoints.length > 0) {
             html += `<div style="margin-top: 20px; padding: 15px; background: #fffbeb; border-left: 5px solid #f59e0b; border-radius: 4px;">
-                        <h5 style="margin: 0 0 5px 0; color: #b45309; font-size: 15px;">💡 AI弱点分析アドバイス</h5>
-                        <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.5;">
-                            今回は <strong>${weakPoints.join('、')}</strong> の正答率が少し低めでした。<br>
-                            この単元の基礎事項を教科書や参考書で復習し、類似問題を2〜3問解き直すだけで、次回の点数が一気に安定します！
-                        </p>
-                     </div>`;
+                        <h5 style="margin: 0 0 5px 0; color: #b45309; font-size: 15px;">💡 AI弱点分析</h5>
+                        <p style="margin: 0; font-size: 13px; color: #78350f; line-height: 1.5;">今回は <strong>${weakPoints.join('、')}</strong> の正答率が低めでした。復習しましょう！</p></div>`;
         } else {
             html += `<div style="margin-top: 20px; padding: 15px; background: #f0fdf4; border-left: 5px solid #22c55e; border-radius: 4px;">
-                        <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 15px;">🌟 AI分析レポート</h5>
-                        <p style="margin: 0; font-size: 13px; color: #14532d; line-height: 1.5;">
-                            素晴らしい成績です！全ての大問で高い正答率をキープできています。<br>
-                            弱点が見当たりません。この調子で他の年度や難易度の高い問題にも挑戦し、得点力を盤石にしましょう！
-                        </p>
-                     </div>`;
+                        <h5 style="margin: 0 0 5px 0; color: #166534; font-size: 15px;">🌟 完璧です！</h5>
+                        <p style="margin: 0; font-size: 13px; color: #14532d; line-height: 1.5;">弱点が見当たりません！この調子をキープしましょう！</p></div>`;
         }
 
-        // （ここにあった不要な閉じタグを削除しました）
-
-        let memoValue = r.memo || ""; // 保存されたメモの復元用
+        let memoValue = r.memo || "";
         html += `<div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 18px; width: 100%; clear: both;">
-                    <label style="display: block; font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 8px;">📝 自己分析メモ（間違えた原因や復習のポイント）</label>
+                    <label style="display: block; font-size: 14px; font-weight: bold; margin-bottom: 8px;">📝 自己分析メモ</label>
                     <textarea oninput="saveSubjectMemo('${resultYear}', '${subject}', this.value)" 
-                        placeholder="例：数学ⅠA第3問の確率。補事象（少なくとも〜）を使う発想が抜けていた。" 
-                        style="width: 100%; min-width: 100%; max-width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; box-sizing: border-box; font-family: inherit; font-size: 14px; line-height: 1.5; resize: vertical; min-height: 90px; background: #f8fafc; color: var(--text-main);">${memoValue}</textarea>
-                 </div>`;
-
-        html += `</div>`; // 科目カード（白いボックス）自体を閉じます
+                        style="width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-family: inherit; font-size: 14px; min-height: 90px; background: #f8fafc;">${memoValue}</textarea>
+                 </div></div>`;
         detailArea.innerHTML += html;
+    });
 
-    }
-
+    if (!hasDetails) detailArea.innerHTML += "<p style='color: var(--text-muted);'>表示できる詳細データがありません。</p>";
 }
 
 function updateChart() {
     let resultYear = document.getElementById("result-year") ? document.getElementById("result-year").value : null;
     let currentResults = (resultYear && subjectResults[resultYear]) ? subjectResults[resultYear] : {};
+    let plan = examPlans[resultYear];
 
-    // ★追加：志望校のデータを取得する
     let uniKey = document.getElementById("university") ? document.getElementById("university").value : "nagoya";
     let uniBorder = universities[uniKey] ? universities[uniKey].border : 65;
 
@@ -383,255 +546,76 @@ function updateChart() {
     let targetData = [];
     let avgData = [];
 
-    // 受験した（成績データがある）科目だけをグラフの軸として追加する
-    for (let key in subjectNames) {
-        if (currentResults[key]) {
-            labels.push(subjectNames[key]);
+    if (plan) {
+        plan.subjects.forEach(key => {
+            if (currentResults[key]) {
+                labels.push(subjectNames[key]);
+                let myPercent = currentResults[key].score / subjectMax[key] * 100;
+                myData.push(myPercent);
 
-            // 1. 自分の得点率
-            let myPercent = currentResults[key].score / subjectMax[key] * 100;
-            myData.push(myPercent);
+                let avgPercent = currentResults[key].avg / subjectMax[key] * 100;
+                avgData.push(avgPercent);
 
-            // 2. 全国平均の得点率
-            let avgPercent = currentResults[key].avg / subjectMax[key] * 100;
-            avgData.push(avgPercent);
-
-            // 3. 志望校目標の得点率（志望校の偏差値ボーダーから各科目の目標点を逆算）
-            let targetScore = currentResults[key].avg + (uniBorder - 50) * currentResults[key].sd / 10;
-            let targetPercent = targetScore / subjectMax[key] * 100;
-            if (targetPercent > 100) targetPercent = 100; // 満点(100%)を超えないように調整
-            targetData.push(targetPercent);
-        }
+                let targetScore = currentResults[key].avg + (uniBorder - 50) * currentResults[key].sd / 10;
+                let targetPercent = targetScore / subjectMax[key] * 100;
+                if (targetPercent > 100) targetPercent = 100;
+                targetData.push(targetPercent);
+            }
+        });
     }
 
     if (labels.length === 0) {
-        labels = ["未受験"];
-        myData = [0];
-        targetData = [0];
-        avgData = [0];
+        labels = ["未受験"]; myData = [0]; targetData = [0]; avgData = [0];
     }
 
     if (radarChart) radarChart.destroy();
-
     radarChart = new Chart(document.getElementById("radarChart"), {
         type: "radar",
         data: {
             labels: labels,
             datasets: [
-                {
-                    label: "あなたの得点率",
-                    data: myData,
-                    backgroundColor: 'rgba(59, 130, 246, 0.4)',
-                    borderColor: 'rgba(59, 130, 246, 1)',
-                    pointBackgroundColor: 'rgba(59, 130, 246, 1)',
-                    order: 3 // ★変更：数字を大きくして、一番後ろ（背面）に配置する
-                },
-                {
-                    label: "志望校目標",
-                    data: targetData,
-                    backgroundColor: 'transparent',
-                    borderColor: 'rgba(16, 185, 129, 1)',
-                    pointBackgroundColor: 'rgba(16, 185, 129, 1)',
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    order: 1 // ★変更：数字を小さくして、一番手前（前面）に配置する
-                },
-                {
-                    label: "全国平均",
-                    data: avgData,
-                    backgroundColor: 'transparent', // ★変更：塗りつぶしを消して「透明（線のみ）」にする
-                    borderColor: 'rgba(100, 116, 139, 1)',
-                    pointBackgroundColor: 'rgba(100, 116, 139, 1)',
-                    borderWidth: 2, // ★変更：線が見やすいように少し太くする
-                    order: 2 // ★変更：あなたの得点よりも手前（前面）に配置する
-                }
+                { label: "あなたの得点率", data: myData, backgroundColor: 'rgba(59, 130, 246, 0.4)', borderColor: 'rgba(59, 130, 246, 1)', pointBackgroundColor: 'rgba(59, 130, 246, 1)', order: 3 },
+                { label: "志望校目標", data: targetData, backgroundColor: 'transparent', borderColor: 'rgba(16, 185, 129, 1)', borderDash: [5, 5], borderWidth: 2, order: 1 },
+                { label: "全国平均", data: avgData, backgroundColor: 'transparent', borderColor: 'rgba(100, 116, 139, 1)', borderWidth: 2, order: 2 }
             ]
         },
-        options: {
-            scales: {
-                r: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        stepSize: 20
-                    }
-                }
-            },
-            plugins: {
-                legend: {
-                    display: true, // ★変更：複数のデータがあるので凡例（色の説明）を表示する
-                    position: 'bottom',
-                    labels: {
-                        font: { size: 12 }
-                    }
-                }
-            }
-        }
+        options: { scales: { r: { beginAtZero: true, max: 100, ticks: { stepSize: 20 } } } }
     });
 }
 
-function updateJudge() {
-    let resultYear = document.getElementById("result-year") ? document.getElementById("result-year").value : null;
-    let currentResults = (resultYear && subjectResults[resultYear]) ? subjectResults[resultYear] : {};
-    let total = 0; let count = 0;
-    let totalSD = 0; // ★ 点数計算用に追加
-
-    for (let subject in currentResults) {
-        total += currentResults[subject].hensachi;
-        totalSD += currentResults[subject].sd;
-        count++;
-    }
-
-    let uniKey = document.getElementById("university").value;
-    let uni = universities[uniKey];
-    let judge = "-";
-    let avgHensachi = 0;
-    let nextRankHensachi = 0;
-    let nextRankLetter = "";
-
-    if (count > 0) {
-        avgHensachi = total / count;
-        if (avgHensachi >= uni.border + 5) { judge = "A"; nextRankLetter = "MAX"; }
-        else if (avgHensachi >= uni.border) { judge = "B"; nextRankHensachi = uni.border + 5; nextRankLetter = "A"; }
-        else if (avgHensachi >= uni.border - 5) { judge = "C"; nextRankHensachi = uni.border; nextRankLetter = "B"; }
-        else if (avgHensachi >= uni.border - 10) { judge = "D"; nextRankHensachi = uni.border - 5; nextRankLetter = "C"; }
-        else { judge = "E"; nextRankHensachi = uni.border - 10; nextRankLetter = "D"; }
-    }
-
-    document.getElementById("judgeLetter").textContent = judge;
-    document.getElementById("judgeUniversity").textContent = uni.name;
-
-    // ★ 追加：次の判定までの点数計算と表示
-    let nextPointsElem = document.getElementById("judgeNextPoints");
-    let rankElem = document.getElementById("judgeUniRank");
-
-    if (nextPointsElem && rankElem) {
-        if (count === 0) {
-            nextPointsElem.innerHTML = "--";
-            rankElem.innerHTML = "--";
-        } else if (judge === "A") {
-            nextPointsElem.innerHTML = "すでに最高判定です！🎉";
-        } else {
-            // 不足している合計偏差値を計算し、標準偏差から必要点数を逆算
-            let diffHensachiTotal = (nextRankHensachi * count) - total;
-            let avgSD = totalSD / count;
-            let diffPoints = Math.ceil(diffHensachiTotal * (avgSD / 10)); // 切り上げ
-            let diffAvg = (nextRankHensachi - avgHensachi).toFixed(1);
-
-            nextPointsElem.innerHTML = `${nextRankLetter}判定まで <strong>あと約 ${diffPoints} 点</strong> <span style="font-size: 11px; color: #fda4af;">(平均偏差値 +${diffAvg})</span>`;
-        }
-
-        // 志望校内順位の取得を呼び出す
-        if (count > 0 && resultYear) {
-            fetchUniversityRank(resultYear, uniKey, avgHensachi);
-        }
-    }
-    updateOverallFeedback();
-}
-
-// ★ 新規追加：Firebaseから同じ志望校のライバルを取得して順位を計算する関数
-async function fetchUniversityRank(year, uniKey, myAvgHensachi) {
-    let rankElem = document.getElementById("judgeUniRank");
-    if (!rankElem) return;
-
-    rankElem.textContent = "集計中...";
-
-    if (!window.db) {
-        rankElem.textContent = "オフライン";
-        return;
-    }
-
-    try {
-        const q = window.query(window.collection(window.db, "scores"), window.where("year", "==", year));
-        const querySnapshot = await window.getDocs(q);
-
-        let userStats = {};
-
-        querySnapshot.forEach((doc) => {
-            let data = doc.data();
-            // 同じ志望校のデータのみを抽出
-            if (data.university === uniKey) {
-                if (!userStats[data.userid]) {
-                    userStats[data.userid] = { total: 0, count: 0 };
-                }
-                userStats[data.userid].total += data.hensachi;
-                userStats[data.userid].count++;
-            }
-        });
-
-        let myProfile = JSON.parse(localStorage.getItem("userProfile") || "{}");
-        let myUserId = myProfile.userid || "guest_me";
-
-        // 画面に表示されている最新の自分の成績リストを合流させる
-        userStats[myUserId] = { avg: myAvgHensachi };
-
-        // 全ライバルの平均偏差値リストを作成
-        let avgList = [];
-        for (let uid in userStats) {
-            if (uid === myUserId) {
-                avgList.push(myAvgHensachi);
-            } else {
-                let avg = userStats[uid].total / userStats[uid].count;
-                avgList.push(avg);
-            }
-        }
-
-        // 偏差値が高い順に並び替え
-        avgList.sort((a, b) => b - a);
-
-        // 自分の順位を計算
-        let myRank = avgList.indexOf(myAvgHensachi) + 1;
-        let totalRivals = avgList.length;
-
-        rankElem.innerHTML = `<strong style="font-size: 16px;">${myRank}</strong> 位 / <span style="font-size: 12px;">${totalRivals} 人中</span>`;
-
-    } catch (error) {
-        console.error("順位取得エラー: ", error);
-        rankElem.textContent = "取得失敗";
-    }
-}
-
-
-function resetAll() {
-
-    subjectResults = {};
-
-    document.getElementById("reportBody").innerHTML = "";
-    document.getElementById("totalScore").textContent = "";
-    document.getElementById("judgeLetter").textContent = "-";
-
-    if (radarChart) {
-        radarChart.destroy();
-    }
-
-    localStorage.removeItem("subjectResults");
-}
-
-
+// ==========================================
+// ★アプリ起動時の処理
+// ==========================================
 window.onload = function () {
     updateCountdown();
-    loadYears();
+
+    let savedPlans = localStorage.getItem("examPlans");
+    if (savedPlans) examPlans = JSON.parse(savedPlans);
+
     let saved = localStorage.getItem("subjectResults");
     if (saved) {
         subjectResults = JSON.parse(saved);
-
-        // ★ 古いデータ形式（年度が設定されていないデータ）を「2022年度」として救済・変換する
         if (subjectResults.japanese || subjectResults.englishR || subjectResults.math1A) {
             let oldData = subjectResults;
             subjectResults = { "2022": oldData };
             localStorage.setItem("subjectResults", JSON.stringify(subjectResults));
         }
+    }
 
-        loadResultYears();
+    loadPlanYears();
+    loadGradingYears();
+    loadResultYears();
+
+    if (document.getElementById("result-year") && document.getElementById("result-year").value) {
         updateReport();
         updateChart();
         updateJudge();
     }
+
     applyProfile();
     loadFriends();
     updateTopHensachi();
 }
-
 
 document.getElementById("subject").addEventListener("change", () => {
 
@@ -641,28 +625,47 @@ document.getElementById("subject").addEventListener("change", () => {
 
 
 function loadYears() {
-
     let subject = document.getElementById("subject").value;
-
     let yearSelect = document.getElementById("year");
-
     yearSelect.innerHTML = "";
-
     let years = Object.keys(pastTests[subject]);
-
     years.sort();
-
     years.forEach(year => {
-
         let option = document.createElement("option");
-
         option.value = year;
         option.textContent = year;
-
         yearSelect.appendChild(option);
-
     });
+    updateOptionalUI(); // ★追加
+}
 
+// ★新規追加：選択問題のチェックボックスを自動生成する関数
+function updateOptionalUI() {
+    let subject = document.getElementById("subject").value;
+    let year = document.getElementById("year").value;
+    if (!subject || !year || !pastTests[subject] || !pastTests[subject][year]) return;
+
+    let data = pastTests[subject][year];
+    let optArea = document.getElementById("optional-sections-area");
+    let checkboxesDiv = document.getElementById("optional-checkboxes");
+
+    if (data.optionalChoices) {
+        optArea.style.display = "block";
+        checkboxesDiv.innerHTML = "";
+        let start = data.optionalChoices.startSection;
+        for (let i = start; i < data.sections.length; i++) {
+            let sec = data.sections[i];
+            let label = document.createElement("label");
+            label.style.display = "flex"; label.style.alignItems = "center"; label.style.gap = "5px"; label.style.cursor = "pointer";
+            let cb = document.createElement("input");
+            cb.type = "checkbox"; cb.className = "optional-cb"; cb.value = i;
+            if (i < start + data.optionalChoices.choose) cb.checked = true; // デフォルトで必要な数だけチェック
+            label.appendChild(cb); label.appendChild(document.createTextNode(sec.name));
+            checkboxesDiv.appendChild(label);
+        }
+    } else {
+        optArea.style.display = "none";
+    }
 }
 
 //開発者向け
@@ -821,6 +824,7 @@ async function saveScoreToCloud() {
                 await window.updateDoc(docRef, {
                     nickname: profile.nickname, year: year, score: resultData.score, hensachi: resultData.hensachi,
                     prefecture: profile.prefecture || "", school: profile.school || "", grade: profile.grade || "",
+                    bunri: profile.bunri || "未設定", // ★追加
                     university: profile.university || "nagoya",
                     updatedAt: new Date()
                 });
@@ -829,6 +833,7 @@ async function saveScoreToCloud() {
                     userid: profile.userid, nickname: profile.nickname, subject: subject, year: year,
                     score: resultData.score, hensachi: resultData.hensachi,
                     prefecture: profile.prefecture || "", school: profile.school || "", grade: profile.grade || "",
+                    bunri: profile.bunri || "未設定", // ★追加
                     university: profile.university || "nagoya",
                     createdAt: new Date()
                 });
@@ -898,26 +903,31 @@ async function loadRanking() {
             return;
         }
 
-        // 4. 画面のテーブルに1件ずつ追加していく
         let rank = 1;
         displayScores.forEach((data) => {
             let hensachi = data.hensachi ? data.hensachi.toFixed(1) : "-";
 
-            // ★順位の表示方法（王冠レイアウト）を決定する
             let rankText = "";
-            if (rank === 1) {
-                rankText = `<span class="crown gold">👑 1位</span>`;
-            } else if (rank === 2) {
-                rankText = `<span class="crown silver">👑 2位</span>`;
-            } else if (rank === 3) {
-                rankText = `<span class="crown bronze">👑 3位</span>`;
-            } else {
-                rankText = `<span>${rank}位</span>`;
+            if (rank === 1) { rankText = `<span class="crown gold">👑 1位</span>`; }
+            else if (rank === 2) { rankText = `<span class="crown silver">👑 2位</span>`; }
+            else if (rank === 3) { rankText = `<span class="crown bronze">👑 3位</span>`; }
+            else { rankText = `<span>${rank}位</span>`; }
+
+            // ★追加：文理のバッジデザイン
+            let bunriBadge = "";
+            if (data.bunri === "文系") {
+                bunriBadge = `<span style="display:inline-block; font-size:10px; background:#ffe4e6; color:#e11d48; padding:2px 6px; border-radius:4px; margin-left:8px; vertical-align:middle; border:1px solid #fecdd3; font-weight:bold;">文系</span>`;
+            } else if (data.bunri === "理系") {
+                bunriBadge = `<span style="display:inline-block; font-size:10px; background:#dbeafe; color:#1e40af; padding:2px 6px; border-radius:4px; margin-left:8px; vertical-align:middle; border:1px solid #bfdbfe; font-weight:bold;">理系</span>`;
             }
 
+            // ★変更：ニックネームの横にバッジを配置
             let row = `<tr>
                 <td style="vertical-align: middle;">${rankText}</td>
-                <td>${data.nickname}<br><span style="font-size: 12px; color: #64748b;">${data.school || "高校未設定"}</span></td>
+                <td>
+                    <strong style="font-size:15px; color:var(--text-main);">${data.nickname}</strong>${bunriBadge}
+                    <br><span style="font-size: 12px; color: #64748b;">${data.school || "高校未設定"}</span>
+                </td>
                 <td><strong style="color: var(--accent); font-size: 16px;">${data.score}</strong></td>
                 <td>${hensachi}</td>
             </tr>`;
@@ -931,14 +941,15 @@ async function loadRanking() {
         tbody.innerHTML = "<tr><td colspan='5'>エラーが発生しました。</td></tr>";
     }
 }
+
 // --- プロフィール機能 ---
 function saveProfile() {
-    // ユーザーIDはFirebaseで自動管理されるため、画面からの取得は不要
     let nickname = document.getElementById("profile-nickname").value;
     let university = document.getElementById("profile-university").value;
     let prefecture = document.getElementById("profile-prefecture").value;
     let school = document.getElementById("profile-school").value;
     let grade = document.getElementById("profile-grade").value;
+    let bunri = document.getElementById("profile-bunri").value; // ★追加
 
     let isAgreed = document.getElementById("agree-terms").checked;
     if (!isAgreed) {
@@ -951,15 +962,14 @@ function saveProfile() {
         return;
     }
 
-    // すでに保存されているプロフィール（FirebaseのIDなど）を呼び出す
     let profile = JSON.parse(localStorage.getItem("userProfile") || "{}");
 
-    // 入力された情報だけを上書き更新する
     profile.nickname = nickname;
     profile.university = university;
     profile.prefecture = prefecture;
     profile.school = school;
     profile.grade = grade;
+    profile.bunri = bunri; // ★追加
 
     localStorage.setItem("userProfile", JSON.stringify(profile));
     alert("プロフィールを保存しました！");
@@ -972,14 +982,13 @@ function applyProfile() {
     if (savedProfile) {
         let profile = JSON.parse(savedProfile);
 
-        // 1. 設定画面の入力を復元（消えたuserid入力欄の処理を削除しました）
         document.getElementById("profile-nickname").value = profile.nickname || "";
         document.getElementById("profile-university").value = profile.university || "nagoya";
         document.getElementById("profile-prefecture").value = profile.prefecture || "";
         document.getElementById("profile-school").value = profile.school || "";
         document.getElementById("profile-grade").value = profile.grade || "3";
+        document.getElementById("profile-bunri").value = profile.bunri || "未設定";
 
-        // 2. クラウド保存用の見えない入力欄へ反映
         let scoreNickname = document.getElementById("nickname");
         if (scoreNickname) scoreNickname.value = profile.nickname;
 
@@ -989,28 +998,51 @@ function applyProfile() {
             if (Object.keys(subjectResults).length > 0) updateJudge();
         }
 
-        // 3. ゲーム風プロフィール画面への反映
         let displayNickname = document.getElementById("display-nickname");
         let displayUserid = document.getElementById("display-userid");
         let displayAvatar = document.getElementById("display-avatar");
+        let displaySchool = document.getElementById("display-profile-school");
+        let displayBunri = document.getElementById("display-profile-bunri");
 
         if (displayNickname) displayNickname.textContent = profile.nickname;
 
-        // ログインしていない場合は未設定にする
-        if (displayUserid) {
-            displayUserid.textContent = profile.userid ? profile.userid : "未設定";
+        if (displayUserid) displayUserid.textContent = profile.userid ? profile.userid : "未設定";
+        if (displaySchool) displaySchool.textContent = profile.school ? profile.school : "未設定";
+
+        // 文理の文字と色を画面に反映
+        if (displayBunri) {
+            displayBunri.textContent = profile.bunri ? profile.bunri : "未設定";
+            if (profile.bunri === "文系") {
+                displayBunri.style.color = "#e11d48"; // 赤系
+            } else if (profile.bunri === "理系") {
+                displayBunri.style.color = "#2563eb"; // 青系
+            } else {
+                displayBunri.style.color = "var(--text-main)";
+            }
         }
 
-        if (displaySchool) {
-            displaySchool.textContent = profile.school ? profile.school : "未設定";
+        // ===============================================
+        // ★新規追加：成績プランの「文理」を自動選択する
+        // ===============================================
+        let planTypeSelect = document.getElementById("plan-type");
+        if (planTypeSelect && profile.bunri) {
+            if (profile.bunri === "文系") {
+                planTypeSelect.value = "bunkei";
+            } else if (profile.bunri === "理系") {
+                planTypeSelect.value = "rikei";
+            }
+            // プルダウンを変更したに合わせて、下の選択科目チェックボックスも自動更新する
+            if (typeof updatePlanUI === 'function') {
+                updatePlanUI();
+            }
         }
+        // ===============================================
 
-        // ユーザーIDを元に、DiceBear APIで固有のアバター画像を生成する
         if (displayAvatar && profile.userid) {
             displayAvatar.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${profile.userid}`;
         }
     }
-    updateLevelUI();
+    if (typeof updateLevelUI === 'function') updateLevelUI();
 }
 
 // --- フレンド機能 ---
@@ -1121,33 +1153,38 @@ function startExam() {
     let target = document.getElementById("target-score").value;
     let timeLimit = document.getElementById("time-limit").value;
 
-    // 入力チェック
-    if (!target || !timeLimit) {
-        alert("目標得点と制限時間を入力してください。");
-        return;
+    if (!target || !timeLimit) { alert("目標得点と制限時間を入力してください。"); return; }
+
+    // ★追加：選択問題のチェック
+    let data = pastTests[subject][year];
+    window.selectedSections = [];
+    if (data.optionalChoices) {
+        let checkedBoxes = document.querySelectorAll(".optional-cb:checked");
+        if (checkedBoxes.length !== data.optionalChoices.choose) {
+            document.getElementById("optional-error").style.display = "block";
+            return;
+        }
+        document.getElementById("optional-error").style.display = "none";
+        for (let i = 0; i < data.optionalChoices.startSection; i++) window.selectedSections.push(i);
+        checkedBoxes.forEach(cb => window.selectedSections.push(Number(cb.value)));
+    } else {
+        for (let i = 0; i < data.sections.length; i++) window.selectedSections.push(i);
     }
 
-    // 画面の表示切り替え
     document.getElementById("exam-setup-section").style.display = "none";
     document.getElementById("exam-sheet-section").style.display = "block";
-
-    // 上部のステータスバーを更新
     document.getElementById("display-exam-subject").textContent = subjectNames[subject];
     document.getElementById("display-exam-year").textContent = year + "年度";
     document.getElementById("display-target-score").textContent = target;
 
-    // マークシートを生成
     updateSheet();
 
-    // タイマーのセットと開始
     remainingSeconds = timeLimit * 60;
     updateTimerDisplay();
-
     clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         remainingSeconds--;
         updateTimerDisplay();
-
         if (remainingSeconds <= 0) {
             clearInterval(timerInterval);
             alert("制限時間終了です！\n鉛筆を置いて、採点ボタンを押してください。");
@@ -1174,6 +1211,18 @@ async function backToSetup(skipConfirm = false) {
         let isOk = await showCustomConfirm("確認", "入力中の解答はすべてリセットされます。\n設定画面に戻りますか？", "戻る", "キャンセル");
         if (!isOk) return;
     }
+
+    // ★追加：タイマーを確実にストップ
+    clearInterval(timerInterval);
+
+    // ★追加：画面の表示を「設定（科目選択）画面」に戻す
+    document.getElementById("exam-sheet-section").style.display = "none";
+    document.getElementById("exam-setup-section").style.display = "block";
+
+    // ★追加：入力中の解答と、連続入力欄の文字をリセット
+    userAnswers = [];
+    let fastInput = document.getElementById("fast-answer-input");
+    if (fastInput) fastInput.value = "";
 }
 
 // --- 成績タブの年度を切り替える機能 ---
@@ -1301,45 +1350,31 @@ let fastInputElem = document.getElementById("fast-answer-input");
 
 if (fastInputElem) {
     fastInputElem.addEventListener("input", function (e) {
-        // 1. もしスマホの予測変換で「全角数字」が入ってしまっても、裏でこっそり「半角」に直す
-        let val = this.value.replace(/[０-９]/g, function (s) {
-            return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
-        });
+        let val = this.value.replace(/[０-９ａ-ｆＡ-Ｆ]/g, function (s) { return String.fromCharCode(s.charCodeAt(0) - 0xFEE0); });
+        val = val.replace(/[ー－−-]/g, '-'); // ★全角マイナス等も半角ハイフンに統一
+        val = val.toLowerCase();
+        val = val.replace(/[^0-9a-f\-\s]/g, ''); // ★マイナス(-)も許可する
 
-        // 2. 数字とスペース以外の文字（ひらがな等）を自動で削除する
-        val = val.replace(/[^0-9\s]/g, '');
+        let visibleRows = document.querySelectorAll(".mark-row");
+        let dataLength = visibleRows.length;
 
-        let dataLength = document.querySelectorAll(".mark-row").length;
+        if (val.length > dataLength) val = val.slice(0, dataLength);
+        this.value = val;
 
-        // 3. 問題数より多く入力できないようにカット
-        if (val.length > dataLength) {
-            val = val.slice(0, dataLength);
-        }
+        visibleRows.forEach(row => { row.querySelectorAll(".choice").forEach(c => c.classList.remove("selected")); });
 
-        this.value = val; // 綺麗な数字だけを入力欄に戻す
-
-        // 4. すべてのマークシート行の色を一旦リセット
-        document.querySelectorAll(".mark-row").forEach(row => {
-            row.querySelectorAll(".choice").forEach(c => c.classList.remove("selected"));
-        });
-
-        // 5. 1文字ずつ読み取って userAnswers とマークシートを自動で塗りつぶす
         userAnswers = [];
         for (let i = 0; i < val.length; i++) {
             let char = val[i];
-            if (char === ' ') continue; // スペース（未解答）はスキップ
+            if (char === ' ') continue;
 
-            let num = Number(char);
-            userAnswers[i] = num;
-
-            let row = document.querySelector(`.mark-row[data-q="${i}"]`);
+            let row = visibleRows[i];
             if (row) {
+                let qIdx = row.dataset.q;
+                userAnswers[qIdx] = char;
+
                 let bubbles = row.querySelectorAll(".choice");
-                bubbles.forEach(b => {
-                    if (Number(b.textContent) === num) {
-                        b.classList.add("selected");
-                    }
-                });
+                bubbles.forEach(b => { if (b.textContent === char) b.classList.add("selected"); });
             }
         }
     });
@@ -1351,15 +1386,13 @@ function updateFastInputDisplay() {
     if (!fastInput) return;
 
     let str = "";
-    let dataLength = document.querySelectorAll(".mark-row").length;
-    for (let i = 0; i < dataLength; i++) {
-        if (userAnswers[i] !== undefined) {
-            str += userAnswers[i];
-        } else {
-            str += " "; // 未解答の箇所はスペースで位置を保つ
-        }
-    }
-    fastInput.value = str.trimEnd(); // 末尾の不要なスペースを削って表示
+    let visibleRows = document.querySelectorAll(".mark-row");
+    visibleRows.forEach(row => {
+        let qIdx = row.dataset.q;
+        if (userAnswers[qIdx] !== undefined) { str += userAnswers[qIdx]; }
+        else { str += " "; }
+    });
+    fastInput.value = str.trimEnd();
 }
 
 // --- リッチUI（通知＆ポップアップ）機能 ---
@@ -1835,3 +1868,98 @@ function saveSubjectMemo(year, subject, text) {
 }
 // HTMLの読み込みが完了した直後にもう一度カウントダウンを計算する（念押し）
 document.addEventListener("DOMContentLoaded", updateCountdown);
+
+// ==========================================
+// ★ 成績確認用の年度読み込み（プラン連動版にアップデート）
+// ==========================================
+function loadResultYears() {
+    let yearSelect = document.getElementById("result-year");
+    if (!yearSelect) return;
+    let currentVal = yearSelect.value;
+    yearSelect.innerHTML = "";
+
+    // プランが作成されている年度だけを選択肢にする
+    let years = Object.keys(examPlans).sort();
+    years.forEach(year => {
+        yearSelect.innerHTML += `<option value="${year}">${year}年度</option>`;
+    });
+
+    if (years.includes(currentVal)) {
+        yearSelect.value = currentVal;
+    } else if (years.length > 0) {
+        yearSelect.value = years[0];
+    }
+}
+
+// ==========================================
+// ★ 新機能：過去の点数を手動入力するプログラム
+// ==========================================
+function loadDirectYears() {
+    let yearSelect = document.getElementById("direct-year");
+    if (!yearSelect) return;
+    yearSelect.innerHTML = "";
+    let years = Object.keys(examPlans).sort();
+    if (years.length === 0) {
+        yearSelect.innerHTML = `<option value="">プラン未作成</option>`;
+        return;
+    }
+    years.forEach(y => yearSelect.innerHTML += `<option value="${y}">${y}年度</option>`);
+    updateDirectSubjects();
+}
+
+function updateDirectSubjects() {
+    let year = document.getElementById("direct-year").value;
+    let subjSelect = document.getElementById("direct-subject");
+    subjSelect.innerHTML = "";
+    if (!year || !examPlans[year]) return;
+
+    examPlans[year].subjects.forEach(sub => {
+        subjSelect.innerHTML += `<option value="${sub}">${subjectNames[sub]}</option>`;
+    });
+}
+
+function saveDirectScore() {
+    let year = document.getElementById("direct-year").value;
+    let subject = document.getElementById("direct-subject").value;
+    let score = Number(document.getElementById("direct-score").value);
+
+    if (!year || !subject) {
+        alert("年度と科目を選択してください。");
+        return;
+    }
+    if (isNaN(score) || score < 0 || score > subjectMax[subject]) {
+        alert(`正しい点数を入力してください（0〜${subjectMax[subject]}点）。`);
+        return;
+    }
+
+    if (!subjectResults[year]) subjectResults[year] = {};
+
+    // 過去問データがない科目（化学など）は、平均点を半分の点数として仮計算する
+    let avg = pastTests[subject] && pastTests[subject][year] ? pastTests[subject][year].avg : subjectMax[subject] / 2;
+    let sd = pastTests[subject] && pastTests[subject][year] ? pastTests[subject][year].sd : 15;
+    let hensachi = ((score - avg) / sd) * 10 + 50;
+
+    subjectResults[year][subject] = {
+        score: score,
+        avg: avg,
+        sd: sd,
+        hensachi: hensachi,
+        sectionResults: [],
+        details: [],
+        isDirectInput: true // 手動入力フラグ
+    };
+
+    localStorage.setItem("subjectResults", JSON.stringify(subjectResults));
+
+    document.getElementById('direct-input-section').style.display = 'none';
+    if (typeof showAchievementToast === 'function') showAchievementToast("成績登録", "手動で点数を登録しました！", "✍️");
+
+    loadResultYears();
+    document.getElementById("result-year").value = year;
+    updateReport();
+    if (typeof updateChart === 'function') updateChart();
+    if (typeof updateJudge === 'function') updateJudge();
+
+    // 手動入力の送信後も、自動で成績確認タブに移動！
+    switchTab('tab-results');
+}
